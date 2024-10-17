@@ -8,7 +8,7 @@ class LLMCost(Base):
 
   id = Column(Integer, primary_key=True, index=True)
   provider_name = Column(String, nullable=False)
-  model_name = Column(String, nullable=False)
+  llm_model_name = Column(String, nullable=False)
   price_per_unit = Column(Float, nullable=False)
   unit_type = Column(String(20), nullable=False)
   overhead_percentage = Column(Float, default=0)
@@ -19,5 +19,5 @@ class LLMCost(Base):
   updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
   __table_args__ = (
-    UniqueConstraint('provider_name', 'model_name', 'valid_from', name='uix_provider_model_valid_from'),
+    UniqueConstraint('provider_name', 'llm_model_name', 'valid_from', name='uix_provider_model_valid_from'),
   )

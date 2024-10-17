@@ -4,7 +4,7 @@ from datetime import datetime
 
 class LLMCostBase(BaseModel):
     provider_name: str
-    model_name: str
+    llm_model_name: str
     price_per_unit: float
     unit_type: str
     overhead_percentage: float

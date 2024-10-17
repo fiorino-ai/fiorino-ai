@@ -7,7 +7,7 @@ steps = [
         CREATE TABLE llm_costs (
             id SERIAL PRIMARY KEY,
             provider_name VARCHAR(255) NOT NULL,
-            model_name VARCHAR(255) NOT NULL,
+            llm_model_name VARCHAR(255) NOT NULL,
             price_per_unit FLOAT NOT NULL,
             unit_type VARCHAR(20) NOT NULL,
             overhead FLOAT DEFAULT 0,
@@ -20,6 +20,7 @@ steps = [
         );
 
         CREATE INDEX idx_valid_period ON llm_costs(valid_from, valid_to);
+        CREATE INDEX idx_provider_model_valid_period ON llm_costs(provider_name, llm_model_name, valid_from, valid_to);
     """,
     "DROP TABLE llm_costs")
 ]

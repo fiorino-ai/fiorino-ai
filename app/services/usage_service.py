@@ -31,7 +31,7 @@ def track_llm_usage(db: Session, usage: UsageCreate):
     total_tokens = usage.input_tokens + usage.output_tokens
     price_per_token = llm_cost.price_per_unit / 1000 if llm_cost.unit_type == "1K" else llm_cost.price_per_unit
     total_model_price = total_tokens * price_per_token
-    total_price = total_model_price * (1 + llm_cost.overhead_percentage / 100)
+    total_price = total_model_price * (1 + llm_cost.overhead / 100)
 
     # Create new usage record
     new_usage = Usage(

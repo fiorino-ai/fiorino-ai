@@ -6,16 +6,16 @@ from fastapi import HTTPException
 def add_or_update_llm_cost(
     db: Session,
     provider_name: str,
-    model_name: str,
+    llm_model_name: str,
     price_per_unit: float = None,
     unit_type: str = None,
-    overhead_percentage: float = None
-):
+    overhead: float = None
+):   
     current_time = datetime.now(timezone.utc)
 
     existing_cost = db.query(LLMCost).filter(
         LLMCost.provider_name == provider_name,
-        LLMCost.model_name == model_name,
+        LLMCost.llm_model_name == llm_model_name,
         LLMCost.valid_to.is_(None)
     ).first()
 
@@ -25,25 +25,26 @@ def add_or_update_llm_cost(
 
         new_cost = LLMCost(
             provider_name=provider_name,
-            model_name=model_name,
+            llm_model_name=llm_model_name,
             price_per_unit=price_per_unit if price_per_unit is not None else existing_cost.price_per_unit,
             unit_type=unit_type if unit_type is not None else existing_cost.unit_type,
-            overhead_percentage=overhead_percentage if overhead_percentage is not None else existing_cost.overhead_percentage,
+            overhead=overhead if overhead is not None else existing_cost.overhead,
             valid_from=current_time
         )
     else:
-        if price_per_unit is None or unit_type is None or overhead_percentage is None:
+        if price_per_unit is None or unit_type is None or overhead is None:
             raise HTTPException(status_code=400, detail="All fields are required when creating a new cost entry")
         new_cost = LLMCost(
             provider_name=provider_name,
-            model_name=model_name,
+            llm_model_name=llm_model_name,
             price_per_unit=price_per_unit,
             unit_type=unit_type,
-            overhead_percentage=overhead_percentage,
+            overhead=overhead,
             valid_from=current_time
         )
 
     db.add(new_cost)
+    print(f"New cost added: {new_cost}")
 
     try:
         db.commit()

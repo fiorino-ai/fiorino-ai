@@ -31,7 +31,7 @@ async def update_model_cost(provider: str, model: str, cost_update: LLMCostUpdat
             model,
             cost_update.price_per_unit,
             cost_update.unit_type,
-            cost_update.overhead_percentage
+            cost_update.overhead
         )
         return new_cost
     except HTTPException as e:

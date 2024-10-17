@@ -11,7 +11,7 @@ class LLMCost(Base):
   llm_model_name = Column(String, nullable=False)
   price_per_unit = Column(Float, nullable=False)
   unit_type = Column(String(20), nullable=False)
-  overhead_percentage = Column(Float, default=0)
+  overhead = Column(Float, default=0)
   valid_from = Column(DateTime, nullable=False)
   valid_to = Column(DateTime)
   is_system = Column(Boolean, default=False)

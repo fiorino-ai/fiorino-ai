@@ -1,6 +1,25 @@
 # Fiorino.AI
 
-Fiorino.AI is a FastAPI-based server that exposes APIs for AI-related functionalities.
+Fiorino.AI is an open-source solution that enables SaaS services using Large Language Models (LLMs) to track costs, usage, and bill customers efficiently.
+
+## Key Features
+
+- **Open Source**: Encourages community adoption and collaboration.
+- **Flexible Integration**: Supports various LLM services and models.
+- **Detailed Tracking**: Anonymous user-specific metrics and cost tracking.
+- **Modular Billing**: Integration with billing systems (e.g., Stripe) for direct user billing.
+- **Privacy-First**: Uses anonymous IDs to protect user privacy.
+- **Scalable Architecture**: Designed to handle multiple realms without performance degradation.
+- **Customization**: Advanced options for realm-specific themes and dashboards.
+- **Interoperability**: Optional data sharing between authorized realms.
+- **Audit and Compliance**: Comprehensive audit trails for each realm.
+
+## Core Functionality
+
+1. **Message Processing**: Receive and analyze user messages and LLM responses.
+2. **Usage Metrics**: Track token usage and associated costs per user.
+3. **Cost Management**: Maintain a database of LLM model costs with customizable overhead.
+4. **Billing Integration**: Seamless integration with Stripe for usage-based billing.
 
 ## Installation
 
@@ -11,38 +30,44 @@ Fiorino.AI is a FastAPI-based server that exposes APIs for AI-related functional
    cd Fiorino.AI
    ```
 
-2. Create a virtual environment and activate it:
+2. Create and activate a virtual environment:
 
    ```
    python -m venv venv
    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
    ```
 
-3. Install the required packages:
+3. Install dependencies:
 
    ```
    pip install -r requirements.txt
    ```
 
-4. Update dependencies (optional):
+4. Set up PostgreSQL:
+
+   - Install PostgreSQL if you haven't already
+   - Create a new database for Fiorino.AI
+   - Update the `DATABASE_URL` in `app/core/config.py` with your PostgreSQL credentials
+
+5. Initialize the database:
    ```
-   pip install --upgrade fastapi uvicorn pydantic pydantic-settings
-   pip freeze > requirements.txt
+   python run.py
    ```
+   This will apply all pending migrations before starting the server.
 
 ## Usage
 
-To run the server, use the following command:
+Start the server with:
 
 ```
 python run.py
 ```
 
-The server will start on `http://localhost:8000`. You can access the API documentation at `http://localhost:8000/docs`.
+The server will be available at `http://localhost:8000`. API documentation can be accessed at `http://localhost:8000/docs`.
 
 ## Development
 
-To run the server in debug mode, set the `DEBUG` environment variable to `True`:
+To run the server in debug mode:
 
 ```
 DEBUG=True python run.py
@@ -50,7 +75,7 @@ DEBUG=True python run.py
 
 ## Testing
 
-To run the tests, use the following command:
+Run tests with:
 
 ```
 pytest
@@ -58,8 +83,8 @@ pytest
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions! Feel free to submit a Pull Request or open an Issue to discuss new features or improvements.
 
 ## License
 
-This project is licensed under the MIT License.
+This project is released under the MIT License.

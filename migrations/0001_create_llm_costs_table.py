@@ -16,7 +16,7 @@ steps = [
             is_system BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE (provider_name, model_name)
+            UNIQUE (provider_name, llm_model_name)
         );
 
         CREATE INDEX idx_valid_period ON llm_costs(valid_from, valid_to);

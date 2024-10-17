@@ -18,8 +18,6 @@ class LLMCost(Base):
   created_at = Column(DateTime, default=func.now())
   updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
-  
-
   __table_args__ = (
     UniqueConstraint('provider_name', 'model_name', 'valid_from', name='uix_provider_model_valid_from'),
   )

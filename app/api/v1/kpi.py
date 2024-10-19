@@ -28,3 +28,20 @@ def get_kpi_cost(
         "most_used_models": most_used_models,
         "model_costs": model_costs
     }
+
+@router.get("/activity")
+def get_kpi_activity(
+    start_date: date = Query(..., description="Start date for the KPI calculation"),
+    end_date: date = Query(..., description="End date for the KPI calculation"),
+    user_id: Optional[str] = Query(None, description="Optional user ID to filter results"),
+    db: Session = Depends(get_db)
+):
+    daily_tokens = kpi_service.get_daily_tokens(db, start_date, end_date, user_id)
+    model_daily_tokens = kpi_service.get_model_daily_tokens(db, start_date, end_date, user_id)
+    top_users = kpi_service.get_top_users(db, start_date, end_date)
+
+    return {
+        "daily_tokens": daily_tokens,
+        "model_daily_tokens": model_daily_tokens,
+        "top_users": top_users
+    }

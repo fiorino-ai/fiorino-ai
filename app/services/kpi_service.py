@@ -117,3 +117,84 @@ def apply_date_and_user_filter(query, start_date: date, end_date: date, user_id:
     if user_id:
         query = query.filter(Usage.user_id == user_id)
     return query
+
+
+def get_daily_tokens(db: Session, start_date: date, end_date: date, user_id: Optional[str] = None):
+    query = db.query(
+        func.date(Usage.created_at).label('date'),
+        func.sum(Usage.input_tokens).label('total_input_tokens'),
+        func.sum(Usage.output_tokens).label('total_output_tokens')
+    )
+
+    query = apply_date_and_user_filter(query, start_date, end_date, user_id)
+    
+    query = query.group_by(func.date(Usage.created_at)).order_by(func.date(Usage.created_at))
+
+    results = query.all()
+
+    return [
+        {
+            "date": str(result.date),
+            "total_input_tokens": result.total_input_tokens,
+            "total_output_tokens": result.total_output_tokens
+        }
+        for result in results
+    ]
+
+def get_model_daily_tokens(db: Session, start_date: date, end_date: date, user_id: Optional[str] = None):
+    query = db.query(
+        func.date(Usage.created_at).label('date'),
+        LLMCost.llm_model_name,
+        func.sum(Usage.input_tokens).label('total_input_tokens'),
+        func.sum(Usage.output_tokens).label('total_output_tokens')
+    ).join(LLMCost, Usage.llm_cost_id == LLMCost.id)
+    
+    query = apply_date_and_user_filter(query, start_date, end_date, user_id)
+    
+    query = query.group_by(func.date(Usage.created_at), LLMCost.llm_model_name).order_by(LLMCost.llm_model_name, func.date(Usage.created_at))
+
+    results = query.all()
+
+    model_data = {}
+    for result in results:
+        if result.llm_model_name not in model_data:
+            model_data[result.llm_model_name] = {
+                "llm_model_name": result.llm_model_name,
+                "data": []
+            }
+        
+        model_data[result.llm_model_name]["data"].append({
+            "date": str(result.date),
+            "total_input_tokens": result.total_input_tokens,
+            "total_output_tokens": result.total_output_tokens
+        })
+
+    return list(model_data.values())
+
+def get_top_users(db: Session, start_date: date, end_date: date, limit: int = 10):
+    # Get the total number of events for the given period
+    total_events = db.query(func.count(Usage.id)).filter(
+        func.date(Usage.created_at) >= start_date,
+        func.date(Usage.created_at) <= end_date
+    ).scalar()
+
+    # Get the top users with their activity counts
+    results = db.query(
+        Usage.user_id,
+        func.count(Usage.id).label('total_activity_records')
+    ).filter(
+        func.date(Usage.created_at) >= start_date,
+        func.date(Usage.created_at) <= end_date
+    ).group_by(Usage.user_id).order_by(func.count(Usage.id).desc()).limit(limit).all()
+
+    return {
+        "total_events": total_events,
+        "users": [
+            {
+                "user_id": result.user_id,
+                "total_activity_records": result.total_activity_records,
+                "percentage": (result.total_activity_records / total_events) * 100 if total_events > 0 else 0
+            }
+            for result in results
+        ]
+    }

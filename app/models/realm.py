@@ -14,3 +14,4 @@ class Realm(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     user = relationship("User", back_populates="realms")
+    api_keys = relationship("APIKey", back_populates="realm")

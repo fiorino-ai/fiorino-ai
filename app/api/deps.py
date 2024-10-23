@@ -1,10 +1,13 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Path
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from app.services.user_service import SECRET_KEY, ALGORITHM
 from app.db.database import get_db
 from sqlalchemy.orm import Session
 from app.models.user import User
+from app.models.realm import Realm
+from typing import Optional
+from fastapi import Header
 
 security = HTTPBearer()
 
@@ -26,3 +29,14 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     if user is None:
         raise credentials_exception
     return {"id": str(user.id), "email": user.email}
+
+async def get_api_key(x_api_key: Optional[str] = Header(None)):
+    if x_api_key is None:
+        raise HTTPException(status_code=400, detail="X-API-Key header is missing")
+    return x_api_key
+
+def check_realm_access(realm_id: str = Path(...), current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    realm = db.query(Realm).filter(Realm.id == realm_id, Realm.created_by == current_user["id"]).first()
+    if not realm:
+        raise HTTPException(status_code=403, detail="You don't have access to this realm")
+    return realm

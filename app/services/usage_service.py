@@ -36,6 +36,7 @@ def track_llm_usage(db: Session, usage: UsageCreate):
     # Create new usage record
     new_usage = Usage(
         user_id=usage.user_id,
+        realm_id=usage.realm_id,  # Add this line
         llm_cost_id=llm_cost.id,
         input_tokens=usage.input_tokens,
         output_tokens=usage.output_tokens,

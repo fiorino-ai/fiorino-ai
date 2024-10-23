@@ -15,3 +15,4 @@ class Realm(Base):
 
     user = relationship("User", back_populates="realms")
     api_keys = relationship("APIKey", back_populates="realm")
+    usages = relationship("Usage", back_populates="realm")

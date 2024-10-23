@@ -2,6 +2,7 @@ annotated-types==0.7.0
 anyio==4.6.2.post1
 bcrypt==4.2.0
 certifi==2024.8.30
+cffi==1.17.1
 charset-normalizer==3.4.0
 click==8.1.7
 dnspython==2.7.0
@@ -24,6 +25,7 @@ mdurl==0.1.2
 passlib==1.7.4
 psycopg2-binary==2.9.9
 pyasn1==0.6.1
+pycparser==2.22
 pydantic==2.9.2
 pydantic-settings==2.4.0
 pydantic_core==2.23.4

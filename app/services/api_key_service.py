@@ -3,37 +3,38 @@ from app.models.api_key import APIKey
 from app.models.realm import Realm
 from app.schemas.api_key import APIKeyCreate, APIKeyUpdate
 from fastapi import HTTPException
-from typing import List
+from typing import List, Optional, Tuple
 import uuid
 import secrets
 import string
 from datetime import datetime, timezone
+import hashlib
 
-def generate_api_key():
-    return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(48))
+def generate_api_key() -> Tuple[str, str]:
+    plain_key = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(48))
+    hashed_key = hashlib.sha256(plain_key.encode()).hexdigest()
+    return plain_key, hashed_key
 
-def create_api_key(db: Session, api_key: APIKeyCreate, user_id: str) -> APIKey:
-    # Check if the user is the author of the realm
+def create_api_key(db: Session, api_key: APIKeyCreate, user_id: str) -> Tuple[APIKey, str]:
     realm = db.query(Realm).filter(Realm.id == api_key.realm_id, Realm.created_by == uuid.UUID(user_id)).first()
     if not realm:
         raise HTTPException(status_code=403, detail="You don't have permission to create an API key for this realm")
 
-    value = generate_api_key()
-    masked = '*' * 43 + value[-5:]
+    plain_key, hashed_key = generate_api_key()
+    masked = '*' * 43 + plain_key[-5:]
     db_api_key = APIKey(
         user_id=uuid.UUID(user_id),
         realm_id=api_key.realm_id,
         name=api_key.name,
-        value=value,
+        value=hashed_key,
         masked=masked
     )
     db.add(db_api_key)
     db.commit()
     db.refresh(db_api_key)
-    return db_api_key
+    return db_api_key, plain_key
 
 def get_user_api_keys(db: Session, user_id: str, realm_id: str) -> List[APIKey]:
-    # Check if the user is the author of the realm
     realm = db.query(Realm).filter(Realm.id == realm_id, Realm.created_by == uuid.UUID(user_id)).first()
     if not realm:
         raise HTTPException(status_code=403, detail="You don't have permission to access this realm")
@@ -64,3 +65,7 @@ def delete_api_key(db: Session, api_key_id: str, user_id: str) -> None:
     db_api_key = get_api_key(db, api_key_id, user_id)
     db.delete(db_api_key)
     db.commit()
+
+def validate_api_key(db: Session, plain_api_key: str) -> Optional[APIKey]:
+    hashed_key = hashlib.sha256(plain_api_key.encode()).hexdigest()
+    return db.query(APIKey).filter(APIKey.value == hashed_key, APIKey.is_disabled == False).first()

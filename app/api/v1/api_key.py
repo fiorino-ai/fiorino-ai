@@ -10,18 +10,15 @@ router = APIRouter()
 
 @router.post("/", response_model=APIKeyCreateResponse)
 def create_api_key(api_key: APIKeyCreate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    try:
-        db_api_key = api_key_service.create_api_key(db, api_key, current_user["id"])
-        return APIKeyCreateResponse(
-            id=db_api_key.id,
-            name=db_api_key.name,
-            masked=db_api_key.masked,
-            is_disabled=db_api_key.is_disabled,
-            disabled_at=db_api_key.disabled_at,
-            value=db_api_key.value
-        )
-    except HTTPException as e:
-        raise e
+    db_api_key, plain_key = api_key_service.create_api_key(db, api_key, current_user["id"])
+    return APIKeyCreateResponse(
+        id=db_api_key.id,
+        name=db_api_key.name,
+        masked=db_api_key.masked,
+        is_disabled=db_api_key.is_disabled,
+        disabled_at=db_api_key.disabled_at,
+        value=plain_key
+    )
 
 @router.get("/", response_model=List[APIKeyResponse])
 def get_user_api_keys(

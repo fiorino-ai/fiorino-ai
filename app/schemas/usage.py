@@ -9,10 +9,12 @@ class UsageCreate(BaseModel):
     input_tokens: Optional[int] = None
     output_tokens: Optional[int] = None
     message: Optional[str] = None
+    realm_id: Optional[str] = None  # Add this line
 
 class UsageResponse(BaseModel):
     id: int
     user_id: str
+    realm_id: str  # Add this line
     llm_cost_id: int
     input_tokens: int
     output_tokens: int

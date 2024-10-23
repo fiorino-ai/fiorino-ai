@@ -73,6 +73,12 @@ To run the server in debug mode:
 DEBUG=True python run.py
 ```
 
+### Seed Usage Data
+
+```
+DATABASE_URL="..." python -m app.scripts.seed_usage
+```
+
 ## Testing
 
 Run tests with:

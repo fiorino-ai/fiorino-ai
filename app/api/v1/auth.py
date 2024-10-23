@@ -4,6 +4,7 @@ from app.db.database import get_db
 from app.schemas.user import UserCreate, UserLogin, UserResponse, PasswordResetRequest, PasswordReset
 from app.services import user_service
 from datetime import timedelta
+from app.api.deps import get_current_user
 
 router = APIRouter()
 
@@ -14,12 +15,19 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = user_service.authenticate_user(db, user)
+    user_data = user_service.authenticate_user(db, user)
     access_token_expires = timedelta(minutes=user_service.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = user_service.create_access_token(
-        data={"sub": str(db_user.id)}, expires_delta=access_token_expires
+        data={"sub": user_data["id"]}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user_data["id"],
+            "email": user_data["email"]
+        }
+    }
 
 @router.post("/password-reset-request")
 def password_reset_request(request: PasswordResetRequest, db: Session = Depends(get_db)):
@@ -29,3 +37,10 @@ def password_reset_request(request: PasswordResetRequest, db: Session = Depends(
 @router.post("/password-reset")
 def password_reset(reset: PasswordReset, db: Session = Depends(get_db)):
     return user_service.reset_password(db, reset.token, reset.new_password)
+
+@router.get("/me", response_model=UserResponse)
+def get_current_user_info(current_user: dict = Depends(get_current_user)):
+    return {
+        "id": current_user["id"],
+        "email": current_user["email"]
+    }

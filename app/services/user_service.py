@@ -24,7 +24,12 @@ def authenticate_user(db: Session, user: UserLogin):
     db_user = db.query(User).filter(User.email == user.email).first()
     if not db_user or not pwd_context.verify(user.password, db_user.password_hash):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
-    return db_user
+    return {
+        "id": str(db_user.id),
+        "email": db_user.email,
+        "created_at": db_user.created_at,
+        "updated_at": db_user.updated_at
+    }
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()

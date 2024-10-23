@@ -14,8 +14,8 @@ class UserLogin(BaseModel):
 class UserResponse(BaseModel):
     id: UUID
     email: EmailStr
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
         orm_mode = True

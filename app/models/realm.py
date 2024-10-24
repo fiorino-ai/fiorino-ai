@@ -18,3 +18,5 @@ class Realm(Base):
     user = relationship("User", back_populates="realms")
     api_keys = relationship("APIKey", back_populates="realm")
     usages = relationship("Usage", back_populates="realm")
+    bill_limits = relationship("BillLimit", back_populates="realm", cascade="all, delete-orphan")
+    overheads = relationship("Overhead", back_populates="realm", cascade="all, delete-orphan")

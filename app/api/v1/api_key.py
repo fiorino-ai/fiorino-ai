@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.schemas.api_key import APIKeyCreate, APIKeyUpdate, APIKeyResponse, APIKeyCreateResponse
@@ -9,8 +9,13 @@ from typing import List
 router = APIRouter()
 
 @router.post("/", response_model=APIKeyCreateResponse)
-def create_api_key(api_key: APIKeyCreate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    db_api_key, plain_key = api_key_service.create_api_key(db, api_key, current_user["id"])
+def create_api_key(
+    realm_id: str = Path(..., description="The ID of the realm"),
+    api_key: APIKeyCreate = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    db_api_key, plain_key = api_key_service.create_api_key(db, api_key, current_user["id"], realm_id)
     return APIKeyCreateResponse(
         id=db_api_key.id,
         name=db_api_key.name,
@@ -22,7 +27,7 @@ def create_api_key(api_key: APIKeyCreate, db: Session = Depends(get_db), current
 
 @router.get("/", response_model=List[APIKeyResponse])
 def get_user_api_keys(
-    realm_id: str = Query(..., description="The ID of the realm to filter API keys"),
+    realm_id: str = Path(..., description="The ID of the realm"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
@@ -39,8 +44,13 @@ def get_user_api_keys(
         raise e
 
 @router.get("/{api_key_id}", response_model=APIKeyResponse)
-def get_api_key(api_key_id: str, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    db_api_key = api_key_service.get_api_key(db, api_key_id, current_user["id"])
+def get_api_key(
+    realm_id: str = Path(..., description="The ID of the realm"),
+    api_key_id: str = Path(..., description="The ID of the API key"),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    db_api_key = api_key_service.get_api_key(db, api_key_id, current_user["id"], realm_id)
     return APIKeyResponse(
         id=db_api_key.id,
         name=db_api_key.name,
@@ -50,8 +60,14 @@ def get_api_key(api_key_id: str, db: Session = Depends(get_db), current_user: di
     )
 
 @router.patch("/{api_key_id}", response_model=APIKeyResponse)
-def update_api_key(api_key_id: str, api_key: APIKeyUpdate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    db_api_key = api_key_service.update_api_key(db, api_key_id, api_key, current_user["id"])
+def update_api_key(
+    realm_id: str = Path(..., description="The ID of the realm"),
+    api_key_id: str = Path(..., description="The ID of the API key"),
+    api_key: APIKeyUpdate = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    db_api_key = api_key_service.update_api_key(db, api_key_id, api_key, current_user["id"], realm_id)
     return APIKeyResponse(
         id=db_api_key.id,
         name=db_api_key.name,
@@ -61,6 +77,11 @@ def update_api_key(api_key_id: str, api_key: APIKeyUpdate, db: Session = Depends
     )
 
 @router.delete("/{api_key_id}")
-def delete_api_key(api_key_id: str, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    api_key_service.delete_api_key(db, api_key_id, current_user["id"])
+def delete_api_key(
+    realm_id: str = Path(..., description="The ID of the realm"),
+    api_key_id: str = Path(..., description="The ID of the API key"),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    api_key_service.delete_api_key(db, api_key_id, current_user["id"], realm_id)
     return {"message": "API Key deleted successfully"}

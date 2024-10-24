@@ -7,7 +7,7 @@ class APIKeyBase(BaseModel):
     name: str
 
 class APIKeyCreate(APIKeyBase):
-    realm_id: str
+    name: str
 
 class APIKeyUpdate(BaseModel):
     name: Optional[str] = None

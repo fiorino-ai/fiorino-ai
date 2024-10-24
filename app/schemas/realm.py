@@ -5,12 +5,16 @@ from uuid import UUID
 
 class RealmBase(BaseModel):
     name: str
+    bill_limit_enabled: bool = False
+    overhead_enabled: bool = False
 
 class RealmCreate(RealmBase):
     pass
 
-class RealmUpdate(RealmBase):
-    pass
+class RealmUpdate(BaseModel):
+    name: Optional[str] = None
+    bill_limit_enabled: Optional[bool] = None
+    overhead_enabled: Optional[bool] = None
 
 class RealmInDB(RealmBase):
     id: str
@@ -20,8 +24,7 @@ class RealmInDB(RealmBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-class RealmResponse(BaseModel):
+class RealmResponse(RealmBase):
     id: str
-    name: str
 
     model_config = ConfigDict(from_attributes=True)

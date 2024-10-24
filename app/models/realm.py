@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey, text
+from sqlalchemy import Column, String, DateTime, ForeignKey, text, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
@@ -12,6 +12,8 @@ class Realm(Base):
     created_by = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    bill_limit_enabled = Column(Boolean, nullable=False, default=False)
+    overhead_enabled = Column(Boolean, nullable=False, default=False)
 
     user = relationship("User", back_populates="realms")
     api_keys = relationship("APIKey", back_populates="realm")

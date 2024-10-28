@@ -1,11 +1,29 @@
 from sqlalchemy.orm import Session
 from app.models.llm_cost import LLMCost
 from app.models.usage import Usage
+from app.models.account import Account
 from app.schemas.usage import UsageCreate
 from datetime import datetime, timezone
 from fastapi import HTTPException
 import tiktoken
 from uuid import UUID
+
+def get_or_create_account(db: Session, external_id: str, realm_id: str) -> Account:
+    account = db.query(Account).filter(
+        Account.external_id == external_id,
+        Account.realm_id == realm_id
+    ).first()
+
+    if not account:
+        account = Account(
+            external_id=external_id,
+            realm_id=realm_id
+        )
+        db.add(account)
+        db.commit()
+        db.refresh(account)
+
+    return account
 
 def track_llm_usage(db: Session, usage: UsageCreate, api_key_id: UUID):
     current_time = datetime.now(timezone.utc)
@@ -20,6 +38,12 @@ def track_llm_usage(db: Session, usage: UsageCreate, api_key_id: UUID):
 
     if not llm_cost:
         raise HTTPException(status_code=404, detail="LLM cost not found for the given provider and model")
+
+    # Handle account lookup/creation if external_id is provided
+    account_id = None
+    if usage.external_id:
+        account = get_or_create_account(db, usage.external_id, usage.realm_id)
+        account_id = account.id
 
     # Tokenize message if provided
     if usage.message:
@@ -36,7 +60,7 @@ def track_llm_usage(db: Session, usage: UsageCreate, api_key_id: UUID):
 
     # Create new usage record
     new_usage = Usage(
-        user_id=usage.user_id,
+        account_id=account_id,
         realm_id=usage.realm_id,
         api_key_id=api_key_id,
         llm_cost_id=llm_cost.id,

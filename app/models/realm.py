@@ -20,3 +20,4 @@ class Realm(Base):
     usages = relationship("Usage", back_populates="realm")
     bill_limits = relationship("BillLimit", back_populates="realm", cascade="all, delete-orphan")
     overheads = relationship("Overhead", back_populates="realm", cascade="all, delete-orphan")
+    accounts = relationship("Account", back_populates="realm", cascade="all, delete-orphan")

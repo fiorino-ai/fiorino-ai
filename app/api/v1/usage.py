@@ -19,7 +19,7 @@ async def track_usage(
         if not api_key_data:
             raise HTTPException(status_code=401, detail="Invalid or disabled API key")
 
-        # Add realm_id and api_key_id to the usage data
+        # Add realm_id to the usage data
         usage.realm_id = api_key_data.realm_id
 
         # Track the usage with the API key ID

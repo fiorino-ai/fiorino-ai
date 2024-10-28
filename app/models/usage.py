@@ -7,7 +7,7 @@ class Usage(Base):
     __tablename__ = "usage"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, nullable=False)
+    account_id = Column(UUID(as_uuid=True), ForeignKey('accounts.id', ondelete='SET NULL'), nullable=True)
     realm_id = Column(String(24), ForeignKey('realms.id'), nullable=False)
     api_key_id = Column(UUID(as_uuid=True), ForeignKey('api_keys.id', ondelete='SET NULL'), nullable=True)
     llm_cost_id = Column(Integer, ForeignKey('llm_costs.id'), nullable=False)
@@ -20,4 +20,5 @@ class Usage(Base):
 
     llm_cost = relationship("LLMCost")
     realm = relationship("Realm", back_populates="usages")
-    api_key = relationship("APIKey")
+    api_key = relationship("APIKey", back_populates="usages")
+    account = relationship("Account", back_populates="usages")

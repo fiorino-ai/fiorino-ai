@@ -4,19 +4,21 @@ from datetime import date
 from app.models.usage import Usage
 from app.models.llm_cost import LLMCost
 from app.models.api_key import APIKey
+from app.models.account import Account
 from typing import Optional, List, Dict
+from uuid import UUID
 
-def apply_filters(query, realm_id: str, start_date: date, end_date: date, user_id: Optional[str] = None):
+def apply_filters(query, realm_id: str, start_date: date, end_date: date, account_id: Optional[UUID] = None):
     query = query.filter(
         Usage.realm_id == realm_id,
         func.date(Usage.created_at) >= start_date,
         func.date(Usage.created_at) <= end_date
     )
-    if user_id:
-        query = query.filter(Usage.user_id == user_id)
+    if account_id:
+        query = query.filter(Usage.account_id == account_id)
     return query
 
-def get_daily_costs(db: Session, realm_id: str, start_date: date, end_date: date, user_id: Optional[str] = None) -> List[Dict]:
+def get_daily_costs(db: Session, realm_id: str, start_date: date, end_date: date, account_id: Optional[UUID] = None) -> List[Dict]:
     query = db.query(
         func.date(Usage.created_at).label('date'),
         LLMCost.provider_name,
@@ -24,7 +26,7 @@ def get_daily_costs(db: Session, realm_id: str, start_date: date, end_date: date
         func.sum(Usage.total_price).label('total_cost')
     ).join(LLMCost, Usage.llm_cost_id == LLMCost.id)
     
-    query = apply_filters(query, realm_id, start_date, end_date, user_id)
+    query = apply_filters(query, realm_id, start_date, end_date, account_id)
     
     query = query.group_by(
         func.date(Usage.created_at),
@@ -44,21 +46,21 @@ def get_daily_costs(db: Session, realm_id: str, start_date: date, end_date: date
         for result in results
     ]
 
-def get_total_cost(db: Session, realm_id: str, start_date: date, end_date: date, user_id: Optional[str] = None) -> float:
+def get_total_cost(db: Session, realm_id: str, start_date: date, end_date: date, account_id: Optional[UUID] = None) -> float:
     query = db.query(func.sum(Usage.total_model_price).label('total_cost'))
-    query = apply_filters(query, realm_id, start_date, end_date, user_id)
+    query = apply_filters(query, realm_id, start_date, end_date, account_id)
     result = query.scalar()
     return float(result) if result else 0.0
 
-def get_total_usage_fees(db: Session, realm_id: str, start_date: date, end_date: date, user_id: Optional[str] = None) -> float:
+def get_total_usage_fees(db: Session, realm_id: str, start_date: date, end_date: date, account_id: Optional[UUID] = None) -> float:
     query = db.query(
         (func.sum(Usage.total_price) - func.sum(Usage.total_model_price)).label('total_usage_fees')
     )
-    query = apply_filters(query, realm_id, start_date, end_date, user_id)
+    query = apply_filters(query, realm_id, start_date, end_date, account_id)
     result = query.scalar()
     return float(result) if result else 0.0
 
-def get_most_used_models(db: Session, realm_id: str, start_date: date, end_date: date, user_id: Optional[str] = None) -> List[Dict]:
+def get_most_used_models(db: Session, realm_id: str, start_date: date, end_date: date, account_id: Optional[UUID] = None) -> List[Dict]:
     query = db.query(
         LLMCost.provider_name,
         LLMCost.llm_model_name,
@@ -66,7 +68,7 @@ def get_most_used_models(db: Session, realm_id: str, start_date: date, end_date:
         func.sum(Usage.total_model_price).label('total_model_price')
     ).join(LLMCost, Usage.llm_cost_id == LLMCost.id)
     
-    query = apply_filters(query, realm_id, start_date, end_date, user_id)
+    query = apply_filters(query, realm_id, start_date, end_date, account_id)
     
     query = query.group_by(
         LLMCost.provider_name,
@@ -85,7 +87,7 @@ def get_most_used_models(db: Session, realm_id: str, start_date: date, end_date:
         for result in results
     ]
 
-def get_model_costs(db: Session, realm_id: str, start_date: date, end_date: date, user_id: Optional[str] = None) -> List[Dict]:
+def get_model_costs(db: Session, realm_id: str, start_date: date, end_date: date, account_id: Optional[UUID] = None) -> List[Dict]:
     query = db.query(
         LLMCost.provider_name,
         LLMCost.llm_model_name,
@@ -93,7 +95,7 @@ def get_model_costs(db: Session, realm_id: str, start_date: date, end_date: date
         func.sum(Usage.total_model_price).label('daily_cost')
     ).join(LLMCost, Usage.llm_cost_id == LLMCost.id)
     
-    query = apply_filters(query, realm_id, start_date, end_date, user_id)
+    query = apply_filters(query, realm_id, start_date, end_date, account_id)
     
     query = query.group_by(
         LLMCost.provider_name,
@@ -123,14 +125,14 @@ def get_model_costs(db: Session, realm_id: str, start_date: date, end_date: date
     
     return list(model_costs.values())
 
-def get_daily_tokens(db: Session, realm_id: str, start_date: date, end_date: date, user_id: Optional[str] = None):
+def get_daily_tokens(db: Session, realm_id: str, start_date: date, end_date: date, account_id: Optional[UUID] = None):
     query = db.query(
         func.date(Usage.created_at).label('date'),
         func.sum(Usage.input_tokens).label('total_input_tokens'),
         func.sum(Usage.output_tokens).label('total_output_tokens')
     )
 
-    query = apply_filters(query, realm_id, start_date, end_date, user_id)
+    query = apply_filters(query, realm_id, start_date, end_date, account_id)
     
     query = query.group_by(func.date(Usage.created_at)).order_by(func.date(Usage.created_at))
 
@@ -145,7 +147,7 @@ def get_daily_tokens(db: Session, realm_id: str, start_date: date, end_date: dat
         for result in results
     ]
 
-def get_model_daily_tokens(db: Session, realm_id: str, start_date: date, end_date: date, user_id: Optional[str] = None):
+def get_model_daily_tokens(db: Session, realm_id: str, start_date: date, end_date: date, account_id: Optional[UUID] = None):
     query = db.query(
         func.date(Usage.created_at).label('date'),
         LLMCost.llm_model_name,
@@ -153,7 +155,7 @@ def get_model_daily_tokens(db: Session, realm_id: str, start_date: date, end_dat
         func.sum(Usage.output_tokens).label('total_output_tokens')
     ).join(LLMCost, Usage.llm_cost_id == LLMCost.id)
     
-    query = apply_filters(query, realm_id, start_date, end_date, user_id)
+    query = apply_filters(query, realm_id, start_date, end_date, account_id)
     
     query = query.group_by(func.date(Usage.created_at), LLMCost.llm_model_name).order_by(LLMCost.llm_model_name, func.date(Usage.created_at))
 
@@ -180,24 +182,35 @@ def get_top_users(db: Session, realm_id: str, start_date: date, end_date: date, 
     total_events = db.query(func.count(Usage.id)).filter(
         Usage.realm_id == realm_id,
         func.date(Usage.created_at) >= start_date,
-        func.date(Usage.created_at) <= end_date
+        func.date(Usage.created_at) <= end_date,
+        Usage.account_id.isnot(None)  # Only count events with account_id
     ).scalar()
 
-    # Get the top users with their activity counts for the specific realm
+    # Get the top accounts with their activity counts for the specific realm
     results = db.query(
-        Usage.user_id,
+        Usage.account_id,
+        Account.external_id.label('account_name'),
         func.count(Usage.id).label('total_activity_records')
+    ).join(
+        Account, Usage.account_id == Account.id
     ).filter(
         Usage.realm_id == realm_id,
         func.date(Usage.created_at) >= start_date,
-        func.date(Usage.created_at) <= end_date
-    ).group_by(Usage.user_id).order_by(func.count(Usage.id).desc()).limit(limit).all()
+        func.date(Usage.created_at) <= end_date,
+        Usage.account_id.isnot(None)
+    ).group_by(
+        Usage.account_id,
+        Account.external_id
+    ).order_by(
+        func.count(Usage.id).desc()
+    ).limit(limit).all()
 
     return {
         "total_events": total_events,
         "users": [
             {
-                "user_id": result.user_id,
+                "account_id": str(result.account_id),
+                "account_name": result.account_name,
                 "total_activity_records": result.total_activity_records,
                 "percentage": (result.total_activity_records / total_events) * 100 if total_events > 0 else 0
             }

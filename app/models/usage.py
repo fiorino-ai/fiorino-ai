@@ -9,6 +9,7 @@ class Usage(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String, nullable=False)
     realm_id = Column(String(24), ForeignKey('realms.id'), nullable=False)
+    api_key_id = Column(UUID(as_uuid=True), ForeignKey('api_keys.id', ondelete='SET NULL'), nullable=True)
     llm_cost_id = Column(Integer, ForeignKey('llm_costs.id'), nullable=False)
     input_tokens = Column(Integer, nullable=False)
     output_tokens = Column(Integer, nullable=False)
@@ -19,3 +20,4 @@ class Usage(Base):
 
     llm_cost = relationship("LLMCost")
     realm = relationship("Realm", back_populates="usages")
+    api_key = relationship("APIKey")

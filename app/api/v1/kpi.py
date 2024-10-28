@@ -43,9 +43,11 @@ def get_kpi_activity(
     daily_tokens = kpi_service.get_daily_tokens(db, realm.id, start_date, end_date, user_id)
     model_daily_tokens = kpi_service.get_model_daily_tokens(db, realm.id, start_date, end_date, user_id)
     top_users = kpi_service.get_top_users(db, realm.id, start_date, end_date)
+    top_api_keys = kpi_service.get_top_api_keys(db, realm.id, start_date, end_date)
 
     return {
         "daily_tokens": daily_tokens,
         "model_daily_tokens": model_daily_tokens,
-        "top_users": top_users
+        "top_users": top_users,
+        "top_api_keys": top_api_keys
     }

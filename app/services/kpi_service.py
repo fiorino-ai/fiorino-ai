@@ -3,6 +3,7 @@ from sqlalchemy import func
 from datetime import date
 from app.models.usage import Usage
 from app.models.llm_cost import LLMCost
+from app.models.api_key import APIKey
 from typing import Optional, List, Dict
 
 def apply_filters(query, realm_id: str, start_date: date, end_date: date, user_id: Optional[str] = None):
@@ -197,6 +198,46 @@ def get_top_users(db: Session, realm_id: str, start_date: date, end_date: date, 
         "users": [
             {
                 "user_id": result.user_id,
+                "total_activity_records": result.total_activity_records,
+                "percentage": (result.total_activity_records / total_events) * 100 if total_events > 0 else 0
+            }
+            for result in results
+        ]
+    }
+
+def get_top_api_keys(db: Session, realm_id: str, start_date: date, end_date: date, limit: int = 10):
+    # Get the total number of events for the given period and realm
+    total_events = db.query(func.count(Usage.id)).filter(
+        Usage.realm_id == realm_id,
+        func.date(Usage.created_at) >= start_date,
+        func.date(Usage.created_at) <= end_date,
+        Usage.api_key_id.isnot(None)  # Only count events with api_key_id
+    ).scalar()
+
+    # Get the top API keys with their activity counts for the specific realm
+    results = db.query(
+        Usage.api_key_id,
+        APIKey.name.label('api_key_name'),
+        func.count(Usage.id).label('total_activity_records')
+    ).join(
+        APIKey, Usage.api_key_id == APIKey.id
+    ).filter(
+        Usage.realm_id == realm_id,
+        func.date(Usage.created_at) >= start_date,
+        func.date(Usage.created_at) <= end_date,
+        Usage.api_key_id.isnot(None)
+    ).group_by(
+        Usage.api_key_id,
+        APIKey.name
+    ).order_by(
+        func.count(Usage.id).desc()
+    ).limit(limit).all()
+
+    return {
+        "total_events": total_events,
+        "api_keys": [
+            {
+                "api_key_name": result.api_key_name,
                 "total_activity_records": result.total_activity_records,
                 "percentage": (result.total_activity_records / total_events) * 100 if total_events > 0 else 0
             }

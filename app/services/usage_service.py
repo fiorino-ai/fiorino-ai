@@ -5,8 +5,9 @@ from app.schemas.usage import UsageCreate
 from datetime import datetime, timezone
 from fastapi import HTTPException
 import tiktoken
+from uuid import UUID
 
-def track_llm_usage(db: Session, usage: UsageCreate):
+def track_llm_usage(db: Session, usage: UsageCreate, api_key_id: UUID):
     current_time = datetime.now(timezone.utc)
 
     # Get the current LLM cost
@@ -25,7 +26,7 @@ def track_llm_usage(db: Session, usage: UsageCreate):
         encoding = tiktoken.encoding_for_model(usage.llm_model_name)
         tokens = encoding.encode(usage.message)
         usage.input_tokens = len(tokens)
-        usage.output_tokens = 0  # Set output tokens to 0 when message is provided
+        usage.output_tokens = 0
 
     # Calculate total tokens and prices
     total_tokens = usage.input_tokens + usage.output_tokens
@@ -36,7 +37,8 @@ def track_llm_usage(db: Session, usage: UsageCreate):
     # Create new usage record
     new_usage = Usage(
         user_id=usage.user_id,
-        realm_id=usage.realm_id,  # Add this line
+        realm_id=usage.realm_id,
+        api_key_id=api_key_id,
         llm_cost_id=llm_cost.id,
         input_tokens=usage.input_tokens,
         output_tokens=usage.output_tokens,

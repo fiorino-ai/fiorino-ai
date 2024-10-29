@@ -28,6 +28,7 @@ def get_accounts(
                 id=account.id,
                 external_id=account.external_id,
                 data=account.data,
+                created_at=account.created_at,
                 realm_id=account.realm_id
             ) for account in accounts
         ],

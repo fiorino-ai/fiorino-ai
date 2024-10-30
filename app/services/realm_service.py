@@ -7,7 +7,7 @@ import uuid
 
 def get_user_realms(db: Session, user_id: str) -> List[RealmResponse]:
     realms = db.query(Realm).filter(Realm.created_by == uuid.UUID(user_id)).order_by(Realm.name).all()
-    return [RealmResponse(id=realm.id, name=realm.name, bill_limit_enabled=realm.bill_limit_enabled, overhead_enabled=realm.overhead_enabled) for realm in realms]
+    return [RealmResponse(id=realm.id, name=realm.name, bill_limit_enabled=realm.bill_limit_enabled, overhead_enabled=realm.overhead_enabled, created_at=realm.created_at) for realm in realms]
 
 def get_realm(db: Session, realm_id: str, user_id: str) -> Realm:
     realm = db.query(Realm).filter(Realm.id == realm_id, Realm.created_by == uuid.UUID(user_id)).first()
@@ -28,7 +28,7 @@ def create_realm(db: Session, realm: RealmCreate, user_id: str) -> RealmResponse
     db.add(db_realm)
     db.commit()
     db.refresh(db_realm)
-    return RealmResponse(id=db_realm.id, name=db_realm.name, bill_limit_enabled=db_realm.bill_limit_enabled, overhead_enabled=db_realm.overhead_enabled)
+    return RealmResponse(id=db_realm.id, name=db_realm.name, bill_limit_enabled=db_realm.bill_limit_enabled, overhead_enabled=db_realm.overhead_enabled, created_at=db_realm.created_at)
 
 def update_realm(db: Session, realm_id: str, realm: RealmUpdate, user_id: str) -> RealmResponse:
     db_realm = get_realm(db, realm_id, user_id)
@@ -50,10 +50,10 @@ def update_realm(db: Session, realm_id: str, realm: RealmUpdate, user_id: str) -
         db_realm.bill_limit_enabled = realm.bill_limit_enabled
     if realm.overhead_enabled is not None:
         db_realm.overhead_enabled = realm.overhead_enabled
-        
+
     db.commit()
     db.refresh(db_realm)
-    return RealmResponse(id=db_realm.id, name=db_realm.name, bill_limit_enabled=db_realm.bill_limit_enabled, overhead_enabled=db_realm.overhead_enabled)
+    return RealmResponse(id=db_realm.id, name=db_realm.name, bill_limit_enabled=db_realm.bill_limit_enabled, overhead_enabled=db_realm.overhead_enabled, created_at=db_realm.created_at)
 
 def delete_realm(db: Session, realm_id: str, user_id: str) -> None:
     db_realm = get_realm(db, realm_id, user_id)

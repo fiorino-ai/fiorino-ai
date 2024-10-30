@@ -22,13 +22,15 @@ def get_kpi_cost(
     total_usage_fees = kpi_service.get_total_usage_fees(db, realm.id, start_date, end_date, account_id)
     most_used_models = kpi_service.get_most_used_models(db, realm.id, start_date, end_date, account_id)
     model_costs = kpi_service.get_model_costs(db, realm.id, start_date, end_date, account_id)
+    llms = kpi_service.get_used_llms(db, realm.id, start_date, end_date, account_id)
 
     return {
         "daily_costs": daily_costs,
         "total_cost": total_cost,
         "total_usage_fees": total_usage_fees,
         "most_used_models": most_used_models,
-        "model_costs": model_costs
+        "model_costs": model_costs,
+        "llms": llms
     }
 
 @router.get("/activity")

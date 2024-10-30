@@ -257,3 +257,36 @@ def get_top_api_keys(db: Session, realm_id: str, start_date: date, end_date: dat
             for result in results
         ]
     }
+
+def get_used_llms(db: Session, realm_id: str, start_date: date, end_date: date, account_id: Optional[UUID] = None) -> Dict:
+    query = db.query(
+        LLMCost.provider_name,
+        LLMCost.llm_model_name
+    ).join(
+        Usage, Usage.llm_cost_id == LLMCost.id
+    ).filter(
+        Usage.realm_id == realm_id,
+        func.date(Usage.created_at) >= start_date,
+        func.date(Usage.created_at) <= end_date
+    )
+
+    if account_id:
+        query = query.filter(Usage.account_id == account_id)
+
+    query = query.group_by(
+        LLMCost.provider_name,
+        LLMCost.llm_model_name
+    ).order_by(
+        LLMCost.provider_name,
+        LLMCost.llm_model_name
+    )
+
+    results = query.all()
+
+    return [
+        {
+            "provider_name": result.provider_name,
+            "llm_model_name": result.llm_model_name
+        }
+        for result in results
+    ]

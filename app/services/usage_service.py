@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from app.models.llm_cost import LLMCost
 from app.models.usage import Usage
 from app.models.account import Account
+from app.models.large_language_model import LargeLanguageModel
 from app.schemas.usage import UsageCreate
 from datetime import datetime, timezone
 from fastapi import HTTPException
@@ -28,16 +29,32 @@ def get_or_create_account(db: Session, external_id: str, realm_id: str) -> Accou
 def track_llm_usage(db: Session, usage: UsageCreate, api_key_id: UUID):
     current_time = datetime.now(timezone.utc)
 
-    # Get the current LLM cost
+    # First, get the LLM model for the given provider and model name in the realm
+    llm = db.query(LargeLanguageModel).filter(
+        LargeLanguageModel.provider_name == usage.provider_name,
+        LargeLanguageModel.model_name == usage.llm_model_name,
+        LargeLanguageModel.realm_id == usage.realm_id
+    ).first()
+
+    if not llm:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Model {usage.llm_model_name} from provider {usage.provider_name} not found for this realm"
+        )
+
+    # Get the current LLM cost for this model
     llm_cost = db.query(LLMCost).filter(
-        LLMCost.provider_name == usage.provider_name,
-        LLMCost.llm_model_name == usage.llm_model_name,
+        LLMCost.llm_id == llm.id,
+        LLMCost.realm_id == usage.realm_id,
         LLMCost.valid_from <= current_time,
         (LLMCost.valid_to.is_(None) | (LLMCost.valid_to > current_time))
     ).order_by(LLMCost.valid_from.desc()).first()
 
     if not llm_cost:
-        raise HTTPException(status_code=404, detail="LLM cost not found for the given provider and model")
+        raise HTTPException(
+            status_code=404, 
+            detail=f"No active cost configuration found for {usage.llm_model_name} from {usage.provider_name}"
+        )
 
     # Handle account lookup/creation if external_id is provided
     account_id = None
@@ -47,10 +64,16 @@ def track_llm_usage(db: Session, usage: UsageCreate, api_key_id: UUID):
 
     # Tokenize message if provided
     if usage.message:
-        encoding = tiktoken.encoding_for_model(usage.llm_model_name)
-        tokens = encoding.encode(usage.message)
-        usage.input_tokens = len(tokens)
-        usage.output_tokens = 0
+        try:
+            encoding = tiktoken.encoding_for_model(usage.llm_model_name)
+            tokens = encoding.encode(usage.message)
+            usage.input_tokens = len(tokens)
+            usage.output_tokens = 0
+        except Exception as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Error tokenizing message: {str(e)}"
+            )
 
     # Calculate total tokens and prices
     total_tokens = usage.input_tokens + usage.output_tokens
@@ -76,7 +99,11 @@ def track_llm_usage(db: Session, usage: UsageCreate, api_key_id: UUID):
 
     try:
         db.commit()
+        db.refresh(new_usage)
         return new_usage
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred while tracking usage: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"An error occurred while tracking usage: {str(e)}"
+        )

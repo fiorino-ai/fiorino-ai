@@ -21,3 +21,5 @@ class Realm(Base):
     bill_limits = relationship("BillLimit", back_populates="realm", cascade="all, delete-orphan")
     overheads = relationship("Overhead", back_populates="realm", cascade="all, delete-orphan")
     accounts = relationship("Account", back_populates="realm", cascade="all, delete-orphan")
+    large_language_models = relationship("LargeLanguageModel", back_populates="realm", cascade="all, delete-orphan")
+    llm_costs = relationship("LLMCost", back_populates="realm", cascade="all, delete-orphan")

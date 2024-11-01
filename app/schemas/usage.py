@@ -17,7 +17,7 @@ class UsageResponse(BaseModel):
     account_id: Optional[UUID]
     realm_id: str
     api_key_id: Optional[UUID]
-    llm_cost_id: int
+    llm_cost_id: UUID
     input_tokens: int
     output_tokens: int
     total_tokens: int

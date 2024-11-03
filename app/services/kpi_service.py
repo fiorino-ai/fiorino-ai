@@ -45,7 +45,7 @@ def get_daily_costs(db: Session, realm_id: str, start_date: date, end_date: date
         {
             'date': result.date,
             'provider_name': result.provider_name,
-            'llm_model_name': result.model_name,
+            'model_name': result.model_name,
             'total_cost': float(result.total_cost)
         }
         for result in results
@@ -89,7 +89,7 @@ def get_most_used_models(db: Session, realm_id: str, start_date: date, end_date:
     return [
         {
             'provider_name': result.provider_name,
-            'llm_model_name': result.model_name,
+            'model_name': result.model_name,
             'total_tokens': int(result.total_tokens),
             'total_model_price': float(result.total_model_price)
         }
@@ -128,7 +128,7 @@ def get_model_costs(db: Session, realm_id: str, start_date: date, end_date: date
         if model_key not in model_costs:
             model_costs[model_key] = {
                 'provider_name': result.provider_name,
-                'llm_model_name': result.model_name,
+                'model_name': result.model_name,
                 'daily_costs': []
             }
         model_costs[model_key]['daily_costs'].append({

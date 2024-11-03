@@ -4,28 +4,32 @@ from datetime import datetime
 from uuid import UUID
 
 class LLMCostBase(BaseModel):
-    provider_name: str
-    llm_model_name: str
     price_per_unit: float
     unit_type: str
     overhead: float
+    valid_from: datetime
 
 class LLMCostCreate(LLMCostBase):
-    pass
+    provider_name: str
+    model_name: str
 
 class LLMCostUpdate(BaseModel):
+    valid_from: datetime
     price_per_unit: Optional[float] = None
     unit_type: Optional[str] = None
     overhead: Optional[float] = None
 
-class LLMCostResponse(LLMCostBase):
+class LLMCostResponse(BaseModel):
     id: UUID
+    llm_id: UUID
+    price_per_unit: float
+    unit_type: str
+    overhead: float
     valid_from: datetime
     valid_to: Optional[datetime] = None
     realm_id: str
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class LLMCostHistoryEntry(BaseModel):
     id: UUID

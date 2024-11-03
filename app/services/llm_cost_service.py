@@ -3,7 +3,7 @@ from sqlalchemy import outerjoin
 from app.models.llm_cost import LLMCost
 from app.models.large_language_model import LargeLanguageModel
 from app.schemas.llm_cost import LLMCostCreate, LLMCostUpdate
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException
 from typing import List
 from uuid import UUID
@@ -98,41 +98,93 @@ def get_single_llm_cost(db: Session, llm_cost_id: UUID, realm_id: str) -> LLMCos
         LLMCost.realm_id == realm_id
     ).first()
 
-def create_llm_cost(db: Session, llm_cost: LLMCostCreate, realm_id: str) -> LLMCost:
-    """Create a new LLM cost"""
-    # Check if there's an existing active cost for this provider/model
-    existing_cost = db.query(LLMCost).filter(
-        LLMCost.provider_name == llm_cost.provider_name,
-        LLMCost.llm_model_name == llm_cost.llm_model_name,
-        LLMCost.realm_id == realm_id,
-        LLMCost.valid_to.is_(None)
+def get_or_create_llm(db: Session, provider_name: str, model_name: str, realm_id: str) -> LargeLanguageModel:
+    """Get or create a LargeLanguageModel entry"""
+    llm = db.query(LargeLanguageModel).filter(
+        LargeLanguageModel.provider_name == provider_name,
+        LargeLanguageModel.model_name == model_name,
+        LargeLanguageModel.realm_id == realm_id
     ).first()
 
-    if existing_cost:
+    if not llm:
+        llm = LargeLanguageModel(
+            provider_name=provider_name,
+            model_name=model_name,
+            realm_id=realm_id
+        )
+        db.add(llm)
+        db.commit()
+        db.refresh(llm)
+
+    return llm
+
+def create_llm_cost(db: Session, llm_cost: LLMCostCreate, realm_id: str) -> LLMCost:
+    """Create a new LLM cost"""
+    # Ensure valid_from is provided and convert to UTC
+    if not llm_cost.valid_from:
         raise HTTPException(
             status_code=400,
-            detail="An active cost already exists for this provider and model"
+            detail="valid_from date is required"
         )
+    
+    # Get or create the LLM
+    llm = get_or_create_llm(db, llm_cost.provider_name, llm_cost.model_name, realm_id)
+    
+    valid_from = llm_cost.valid_from.astimezone(timezone.utc)
 
-    current_time = datetime.now(timezone.utc)
-    db_llm_cost = LLMCost(
-        **llm_cost.dict(),
-        realm_id=realm_id,
-        valid_from=current_time
+    # Find any overlapping cost record
+    overlapping_cost = (
+        db.query(LLMCost)
+        .filter(
+            LLMCost.llm_id == llm.id,
+            LLMCost.realm_id == realm_id,
+            LLMCost.valid_from <= valid_from,
+            (LLMCost.valid_to.is_(None) | (LLMCost.valid_to > valid_from))
+        )
+        .order_by(LLMCost.valid_from.desc())
+        .first()
     )
 
     try:
+        # If there's an overlapping record, close it the day before
+        if overlapping_cost:
+            # Set the end of the previous day as the valid_to
+            previous_day_end = valid_from.replace(
+                hour=23, 
+                minute=59, 
+                second=59, 
+                microsecond=999999
+            ) - timedelta(days=1)
+
+            overlapping_cost.valid_to = previous_day_end
+            db.add(overlapping_cost)
+
+        # Create the new cost record
+        db_llm_cost = LLMCost(
+            llm_id=llm.id,
+            realm_id=realm_id,
+            price_per_unit=llm_cost.price_per_unit,
+            unit_type=llm_cost.unit_type,
+            overhead=llm_cost.overhead,
+            valid_from=valid_from
+        )
+
         db.add(db_llm_cost)
         db.commit()
         db.refresh(db_llm_cost)
         return db_llm_cost
+
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500, 
+            detail=f"An error occurred while creating the cost record: {str(e)}"
+        )
 
 def update_llm_cost(db: Session, llm_cost_id: UUID, llm_cost: LLMCostUpdate, realm_id: str) -> LLMCost:
     """Update an existing LLM cost"""
     current_time = datetime.now(timezone.utc)
+    valid_from = llm_cost.valid_from.astimezone(timezone.utc)
     
     # Get the existing cost
     existing_cost = get_single_llm_cost(db, llm_cost_id, realm_id)
@@ -140,46 +192,93 @@ def update_llm_cost(db: Session, llm_cost_id: UUID, llm_cost: LLMCostUpdate, rea
         return None
 
     # If it's already expired, we can't update it
-    if existing_cost.valid_to is not None:
+    if existing_cost.valid_to is not None and existing_cost.valid_to < current_time:
         raise HTTPException(
             status_code=400,
             detail="Cannot update an expired cost entry"
         )
 
-    # Mark the current cost as expired
-    existing_cost.valid_to = current_time
-
-    # Create a new cost entry with the updated values
-    new_cost = LLMCost(
-        provider_name=existing_cost.provider_name,
-        llm_model_name=existing_cost.llm_model_name,
-        price_per_unit=llm_cost.price_per_unit if llm_cost.price_per_unit is not None else existing_cost.price_per_unit,
-        unit_type=llm_cost.unit_type if llm_cost.unit_type is not None else existing_cost.unit_type,
-        overhead=llm_cost.overhead if llm_cost.overhead is not None else existing_cost.overhead,
-        valid_from=current_time,
-        realm_id=realm_id
-    )
-
     try:
-        db.add(existing_cost)
-        db.add(new_cost)
-        db.commit()
-        db.refresh(new_cost)
-        return new_cost
+        # If valid_from dates match, update the existing record
+        if existing_cost.valid_from == valid_from:
+            if llm_cost.price_per_unit is not None:
+                existing_cost.price_per_unit = llm_cost.price_per_unit
+            if llm_cost.unit_type is not None:
+                existing_cost.unit_type = llm_cost.unit_type
+            if llm_cost.overhead is not None:
+                existing_cost.overhead = llm_cost.overhead
+            
+            db.add(existing_cost)
+            db.commit()
+            db.refresh(existing_cost)
+            return existing_cost
+        
+        # If valid_from dates differ, create a new record
+        else:
+            # Close the existing cost
+            existing_cost.valid_to = valid_from.replace(
+                hour=23,
+                minute=59, 
+                second=59, 
+                microsecond=999999
+            ) - timedelta(days=1)
+
+            # Create new cost entry
+            new_cost = LLMCost(
+                llm_id=existing_cost.llm_id,
+                price_per_unit=llm_cost.price_per_unit if llm_cost.price_per_unit is not None else existing_cost.price_per_unit,
+                unit_type=llm_cost.unit_type if llm_cost.unit_type is not None else existing_cost.unit_type,
+                overhead=llm_cost.overhead if llm_cost.overhead is not None else existing_cost.overhead,
+                valid_from=valid_from,
+                realm_id=realm_id
+            )
+
+            db.add(existing_cost)
+            db.add(new_cost)
+            db.commit()
+            db.refresh(new_cost)
+            return new_cost
+
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
-def delete_llm_cost(db: Session, llm_cost_id: UUID, realm_id: str) -> bool:
-    """Delete an LLM cost"""
+def delete_llm_cost(db: Session, llm_cost_id: UUID, realm_id: str, reopen_previous_price: bool = False) -> bool:
+    """
+    Delete an LLM cost and optionally reopen the previous price
+    """
     llm_cost = get_single_llm_cost(db, llm_cost_id, realm_id)
     if not llm_cost:
         return False
 
     try:
+        if reopen_previous_price:
+            # Find the previous cost record for this LLM
+            previous_cost = (
+                db.query(LLMCost)
+                .filter(
+                    LLMCost.llm_id == llm_cost.llm_id,
+                    LLMCost.realm_id == realm_id,
+                    LLMCost.valid_from < llm_cost.valid_from,
+                    LLMCost.id != llm_cost.id
+                )
+                .order_by(LLMCost.valid_from.desc())
+                .first()
+            )
+
+            if previous_cost:
+                # Reopen the previous cost by setting valid_to to None
+                previous_cost.valid_to = None
+                db.add(previous_cost)
+
+        # Delete the current cost
         db.delete(llm_cost)
         db.commit()
         return True
     except Exception as e:
+        print(e)
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500, 
+            detail=f"An error occurred while deleting the cost record: {str(e)}"
+        )

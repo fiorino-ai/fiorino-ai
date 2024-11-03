@@ -5,6 +5,7 @@ from app.models.usage import Usage
 from app.models.llm_cost import LLMCost
 from app.models.api_key import APIKey
 from app.models.account import Account
+from app.models.large_language_model import LargeLanguageModel
 from typing import Optional, List, Dict
 from uuid import UUID
 
@@ -21,17 +22,21 @@ def apply_filters(query, realm_id: str, start_date: date, end_date: date, accoun
 def get_daily_costs(db: Session, realm_id: str, start_date: date, end_date: date, account_id: Optional[UUID] = None) -> List[Dict]:
     query = db.query(
         func.date(Usage.created_at).label('date'),
-        LLMCost.provider_name,
-        LLMCost.llm_model_name,
+        LargeLanguageModel.provider_name,
+        LargeLanguageModel.model_name,
         func.sum(Usage.total_price).label('total_cost')
-    ).join(LLMCost, Usage.llm_cost_id == LLMCost.id)
+    ).join(
+        LLMCost, Usage.llm_cost_id == LLMCost.id
+    ).join(
+        LargeLanguageModel, LLMCost.llm_id == LargeLanguageModel.id
+    )
     
     query = apply_filters(query, realm_id, start_date, end_date, account_id)
     
     query = query.group_by(
         func.date(Usage.created_at),
-        LLMCost.provider_name,
-        LLMCost.llm_model_name
+        LargeLanguageModel.provider_name,
+        LargeLanguageModel.model_name
     ).order_by(func.date(Usage.created_at))
     
     results = query.all()
@@ -40,7 +45,7 @@ def get_daily_costs(db: Session, realm_id: str, start_date: date, end_date: date
         {
             'date': result.date,
             'provider_name': result.provider_name,
-            'llm_model_name': result.llm_model_name,
+            'llm_model_name': result.model_name,
             'total_cost': float(result.total_cost)
         }
         for result in results
@@ -62,17 +67,21 @@ def get_total_usage_fees(db: Session, realm_id: str, start_date: date, end_date:
 
 def get_most_used_models(db: Session, realm_id: str, start_date: date, end_date: date, account_id: Optional[UUID] = None) -> List[Dict]:
     query = db.query(
-        LLMCost.provider_name,
-        LLMCost.llm_model_name,
+        LargeLanguageModel.provider_name,
+        LargeLanguageModel.model_name,
         func.sum(Usage.total_tokens).label('total_tokens'),
         func.sum(Usage.total_model_price).label('total_model_price')
-    ).join(LLMCost, Usage.llm_cost_id == LLMCost.id)
+    ).join(
+        LLMCost, Usage.llm_cost_id == LLMCost.id
+    ).join(
+        LargeLanguageModel, LLMCost.llm_id == LargeLanguageModel.id
+    )
     
     query = apply_filters(query, realm_id, start_date, end_date, account_id)
     
     query = query.group_by(
-        LLMCost.provider_name,
-        LLMCost.llm_model_name
+        LargeLanguageModel.provider_name,
+        LargeLanguageModel.model_name
     ).order_by(func.sum(Usage.total_tokens).desc())
     
     results = query.all()
@@ -80,7 +89,7 @@ def get_most_used_models(db: Session, realm_id: str, start_date: date, end_date:
     return [
         {
             'provider_name': result.provider_name,
-            'llm_model_name': result.llm_model_name,
+            'llm_model_name': result.model_name,
             'total_tokens': int(result.total_tokens),
             'total_model_price': float(result.total_model_price)
         }
@@ -89,21 +98,25 @@ def get_most_used_models(db: Session, realm_id: str, start_date: date, end_date:
 
 def get_model_costs(db: Session, realm_id: str, start_date: date, end_date: date, account_id: Optional[UUID] = None) -> List[Dict]:
     query = db.query(
-        LLMCost.provider_name,
-        LLMCost.llm_model_name,
+        LargeLanguageModel.provider_name,
+        LargeLanguageModel.model_name,
         func.date(Usage.created_at).label('date'),
         func.sum(Usage.total_model_price).label('daily_cost')
-    ).join(LLMCost, Usage.llm_cost_id == LLMCost.id)
+    ).join(
+        LLMCost, Usage.llm_cost_id == LLMCost.id
+    ).join(
+        LargeLanguageModel, LLMCost.llm_id == LargeLanguageModel.id
+    )
     
     query = apply_filters(query, realm_id, start_date, end_date, account_id)
     
     query = query.group_by(
-        LLMCost.provider_name,
-        LLMCost.llm_model_name,
+        LargeLanguageModel.provider_name,
+        LargeLanguageModel.model_name,
         func.date(Usage.created_at)
     ).order_by(
-        LLMCost.provider_name,
-        LLMCost.llm_model_name,
+        LargeLanguageModel.provider_name,
+        LargeLanguageModel.model_name,
         func.date(Usage.created_at)
     )
     
@@ -111,11 +124,11 @@ def get_model_costs(db: Session, realm_id: str, start_date: date, end_date: date
     
     model_costs = {}
     for result in results:
-        model_key = f"{result.provider_name}:{result.llm_model_name}"
+        model_key = f"{result.provider_name}:{result.model_name}"
         if model_key not in model_costs:
             model_costs[model_key] = {
                 'provider_name': result.provider_name,
-                'llm_model_name': result.llm_model_name,
+                'llm_model_name': result.model_name,
                 'daily_costs': []
             }
         model_costs[model_key]['daily_costs'].append({
@@ -150,26 +163,30 @@ def get_daily_tokens(db: Session, realm_id: str, start_date: date, end_date: dat
 def get_model_daily_tokens(db: Session, realm_id: str, start_date: date, end_date: date, account_id: Optional[UUID] = None):
     query = db.query(
         func.date(Usage.created_at).label('date'),
-        LLMCost.llm_model_name,
+        LargeLanguageModel.model_name,
         func.sum(Usage.input_tokens).label('total_input_tokens'),
         func.sum(Usage.output_tokens).label('total_output_tokens')
-    ).join(LLMCost, Usage.llm_cost_id == LLMCost.id)
+    ).join(
+        LLMCost, Usage.llm_cost_id == LLMCost.id
+    ).join(
+        LargeLanguageModel, LLMCost.llm_id == LargeLanguageModel.id
+    )
     
     query = apply_filters(query, realm_id, start_date, end_date, account_id)
     
-    query = query.group_by(func.date(Usage.created_at), LLMCost.llm_model_name).order_by(LLMCost.llm_model_name, func.date(Usage.created_at))
+    query = query.group_by(func.date(Usage.created_at), LargeLanguageModel.model_name).order_by(LargeLanguageModel.model_name, func.date(Usage.created_at))
 
     results = query.all()
 
     model_data = {}
     for result in results:
-        if result.llm_model_name not in model_data:
-            model_data[result.llm_model_name] = {
-                "llm_model_name": result.llm_model_name,
+        if result.model_name not in model_data:
+            model_data[result.model_name] = {
+                "model_name": result.model_name,
                 "data": []
             }
         
-        model_data[result.llm_model_name]["data"].append({
+        model_data[result.model_name]["data"].append({
             "date": str(result.date),
             "total_input_tokens": result.total_input_tokens,
             "total_output_tokens": result.total_output_tokens
@@ -260,8 +277,10 @@ def get_top_api_keys(db: Session, realm_id: str, start_date: date, end_date: dat
 
 def get_used_llms(db: Session, realm_id: str, start_date: date, end_date: date, account_id: Optional[UUID] = None) -> Dict:
     query = db.query(
-        LLMCost.provider_name,
-        LLMCost.llm_model_name
+        LargeLanguageModel.provider_name,
+        LargeLanguageModel.model_name
+    ).join(
+        LLMCost, LLMCost.llm_id == LargeLanguageModel.id
     ).join(
         Usage, Usage.llm_cost_id == LLMCost.id
     ).filter(
@@ -274,11 +293,11 @@ def get_used_llms(db: Session, realm_id: str, start_date: date, end_date: date, 
         query = query.filter(Usage.account_id == account_id)
 
     query = query.group_by(
-        LLMCost.provider_name,
-        LLMCost.llm_model_name
+        LargeLanguageModel.provider_name,
+        LargeLanguageModel.model_name
     ).order_by(
-        LLMCost.provider_name,
-        LLMCost.llm_model_name
+        LargeLanguageModel.provider_name,
+        LargeLanguageModel.model_name
     )
 
     results = query.all()
@@ -286,7 +305,7 @@ def get_used_llms(db: Session, realm_id: str, start_date: date, end_date: date, 
     return [
         {
             "provider_name": result.provider_name,
-            "llm_model_name": result.llm_model_name
+            "model_name": result.model_name
         }
         for result in results
     ]

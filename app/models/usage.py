@@ -18,7 +18,7 @@ class Usage(Base):
     total_model_price = Column(Float, nullable=False)
     total_price = Column(Float, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    # updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     llm_cost = relationship("LLMCost", back_populates="usages")
     realm = relationship("Realm", back_populates="usages")

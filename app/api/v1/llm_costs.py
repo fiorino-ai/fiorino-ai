@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.llm_cost import LLMCost
@@ -71,13 +71,25 @@ async def update_llm_cost_by_id(
 @router.delete("/{llm_cost_id}")
 async def delete_llm_cost_by_id(
     llm_cost_id: UUID,
+    reopen_previous_price: bool = Query(
+        False,
+        description="When true, reopens the previous price for this LLM"
+    ),
     realm: dict = Depends(check_realm_access),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """Delete an LLM cost"""
-    success = delete_llm_cost(db, llm_cost_id, realm.id)
+    """
+    Delete an LLM cost.
+    Optionally reopen the previous price for this LLM if reopen_previous_price is True.
+    """
+    success = delete_llm_cost(db, llm_cost_id, realm.id, reopen_previous_price)
     if not success:
         raise HTTPException(status_code=404, detail="LLM cost not found")
-    return {"message": "LLM cost deleted successfully"}
+    
+    message = "LLM cost deleted successfully"
+    if reopen_previous_price:
+        message += " and previous price reopened"
+    
+    return {"message": message}
 

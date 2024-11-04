@@ -3,6 +3,8 @@ from app.models.llm_cost import LLMCost
 from app.models.usage import Usage
 from app.models.account import Account
 from app.models.large_language_model import LargeLanguageModel
+from app.models.realm import Realm
+from app.models.overhead import Overhead
 from app.schemas.usage import UsageCreate
 from datetime import datetime, timezone
 from fastapi import HTTPException
@@ -25,6 +27,16 @@ def get_or_create_account(db: Session, external_id: str, realm_id: str) -> Accou
         db.refresh(account)
 
     return account
+
+def get_current_overhead(db: Session, realm_id: str, current_time: datetime) -> float:
+    """Get the current valid overhead percentage for a realm"""
+    overhead = db.query(Overhead).filter(
+        Overhead.realm_id == realm_id,
+        Overhead.valid_from <= current_time,
+        (Overhead.valid_to.is_(None) | (Overhead.valid_to > current_time))
+    ).order_by(Overhead.valid_from.desc()).first()
+
+    return overhead.percentage if overhead else 0
 
 def track_llm_usage(db: Session, usage: UsageCreate, api_key_id: UUID):
     current_time = datetime.now(timezone.utc)
@@ -56,6 +68,11 @@ def track_llm_usage(db: Session, usage: UsageCreate, api_key_id: UUID):
             detail=f"No active cost configuration found for {usage.llm_model_name} from {usage.provider_name}"
         )
 
+    # Get realm configuration
+    realm = db.query(Realm).filter(Realm.id == usage.realm_id).first()
+    if not realm:
+        raise HTTPException(status_code=404, detail="Realm not found")
+
     # Handle account lookup/creation if external_id is provided
     account_id = None
     if usage.external_id:
@@ -75,11 +92,20 @@ def track_llm_usage(db: Session, usage: UsageCreate, api_key_id: UUID):
                 detail=f"Error tokenizing message: {str(e)}"
             )
 
-    # Calculate total tokens and prices
+    # Calculate total tokens and base price
     total_tokens = usage.input_tokens + usage.output_tokens
     price_per_token = llm_cost.price_per_unit / 1000 if llm_cost.unit_type == "1K" else llm_cost.price_per_unit
     total_model_price = total_tokens * price_per_token
-    total_price = total_model_price * (1 + llm_cost.overhead / 100)
+
+    # Determine overhead percentage
+    overhead_percentage = 0
+    if llm_cost.overhead:  # First check LLMCost overhead
+        overhead_percentage = llm_cost.overhead
+    elif realm.overhead_enabled:  # Then check realm overhead if enabled
+        overhead_percentage = get_current_overhead(db, usage.realm_id, current_time)
+
+    # Calculate final price with overhead
+    total_price = total_model_price * (1 + overhead_percentage)
 
     # Create new usage record
     new_usage = Usage(

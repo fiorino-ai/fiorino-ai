@@ -13,6 +13,9 @@ class UsageCreate(BaseModel):
     external_id: Optional[str] = None
 
 class UsageResponse(BaseModel):
+    model_config = {
+        'from_attributes': True
+    }
     id: int
     account_id: Optional[UUID]
     realm_id: str
@@ -25,5 +28,3 @@ class UsageResponse(BaseModel):
     total_price: float
     created_at: datetime
 
-    class Config:
-        orm_mode = True

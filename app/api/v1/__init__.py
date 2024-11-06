@@ -8,6 +8,7 @@ from .api_key import router as api_key_router
 from .bill_limit import router as bill_limit_router
 from .overhead import router as overhead_router
 from .account import router as account_router
+from .api_log import router as api_log_router
 
 v1_router = APIRouter()
 v1_router.include_router(auth_router, prefix="/auth", tags=["Authentication"])
@@ -19,3 +20,4 @@ v1_router.include_router(api_key_router, prefix="/realms/{realm_id}/api-keys", t
 v1_router.include_router(bill_limit_router, prefix="/realms/{realm_id}/bill-limits", tags=["Bill Limits"])
 v1_router.include_router(overhead_router, prefix="/realms/{realm_id}/overheads", tags=["Overheads"])
 v1_router.include_router(account_router, prefix="/realms/{realm_id}/accounts", tags=["Accounts"])
+v1_router.include_router(api_log_router, prefix="/realms/{realm_id}/usage", tags=["API Logs"])

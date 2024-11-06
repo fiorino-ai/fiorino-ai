@@ -1,10 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db.database import get_db
-from app.schemas.bill_limit import BillLimitCreate, BillLimitUpdate, BillLimitResponse
+from app.schemas.bill_limit import (
+    BillLimitCreate, 
+    BillLimitUpdate, 
+    BillLimitResponse,
+    BillLimitWithHistoryResponse
+)
 from app.services import bill_limit_service
 from app.api.deps import get_current_user, check_realm_access
-from typing import List
+from typing import Optional
 import uuid
 
 router = APIRouter()
@@ -18,12 +23,13 @@ def create_bill_limit(
 ):
     return bill_limit_service.create_bill_limit(db, bill_limit, realm.id)
 
-@router.get("/", response_model=List[BillLimitResponse])
+@router.get("/", response_model=Optional[BillLimitWithHistoryResponse])
 def get_bill_limits(
     realm: dict = Depends(check_realm_access),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
+    """Get the current bill limit with its history"""
     return bill_limit_service.get_bill_limits(db, realm.id)
 
 @router.get("/{bill_limit_id}", response_model=BillLimitResponse)

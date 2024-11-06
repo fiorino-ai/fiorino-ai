@@ -1,8 +1,15 @@
 from sqlalchemy.orm import Session
 from app.models.bill_limit import BillLimit
-from app.schemas.bill_limit import BillLimitCreate, BillLimitUpdate, BillLimitResponse
+from app.schemas.bill_limit import (
+    BillLimitCreate, 
+    BillLimitUpdate, 
+    BillLimitResponse,
+    BillLimitWithHistoryResponse,
+    BillLimitHistoryEntry
+)
 from fastapi import HTTPException
-from typing import List
+from typing import Optional
+from datetime import datetime, timezone
 import uuid
 
 def create_bill_limit(db: Session, bill_limit: BillLimitCreate, realm_id: str) -> BillLimitResponse:
@@ -12,9 +19,47 @@ def create_bill_limit(db: Session, bill_limit: BillLimitCreate, realm_id: str) -
     db.refresh(db_bill_limit)
     return BillLimitResponse.from_orm(db_bill_limit)
 
-def get_bill_limits(db: Session, realm_id: str) -> List[BillLimitResponse]:
-    bill_limits = db.query(BillLimit).filter(BillLimit.realm_id == realm_id).all()
-    return [BillLimitResponse.from_orm(bl) for bl in bill_limits]
+def get_bill_limits(db: Session, realm_id: str) -> Optional[BillLimitWithHistoryResponse]:
+    """
+    Get the current bill limit for a realm with its history.
+    Returns the current bill limit and its history of changes.
+    """
+    current_time = datetime.now(timezone.utc)
+    
+    # Get all bill limit records for the realm ordered by valid_from desc
+    historical_records = (
+        db.query(BillLimit)
+        .filter(BillLimit.realm_id == realm_id)
+        .order_by(BillLimit.valid_from.desc())
+        .all()
+    )
+
+    if not historical_records:
+        return None
+
+    # Get current active record (most recent valid record)
+    current_record = next(
+        (bl for bl in historical_records 
+         if bl.valid_from <= current_time and (bl.valid_to is None or bl.valid_to > current_time)),
+        None
+    )
+
+    return BillLimitWithHistoryResponse(
+        id=historical_records[0].id,  # Use the most recent record's ID
+        amount=current_record.amount if current_record else None,
+        valid_from=current_record.valid_from if current_record else None,
+        valid_to=current_record.valid_to if current_record else None,
+        realm_id=realm_id,
+        history=[
+            BillLimitHistoryEntry(
+                id=record.id,
+                amount=record.amount,
+                valid_from=record.valid_from,
+                valid_to=record.valid_to
+            )
+            for record in historical_records
+        ]
+    )
 
 def get_bill_limit(db: Session, bill_limit_id: uuid.UUID, realm_id: str) -> BillLimitResponse:
     bill_limit = db.query(BillLimit).filter(BillLimit.id == bill_limit_id, BillLimit.realm_id == realm_id).first()

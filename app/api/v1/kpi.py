@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.services import kpi_service
 from app.api.deps import get_current_user, check_realm_access
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Optional
+from uuid import UUID
 
 router = APIRouter()
 
@@ -13,25 +14,20 @@ def get_kpi_cost(
     realm: dict = Depends(check_realm_access),
     start_date: date = Query(..., description="Start date for the KPI calculation"),
     end_date: date = Query(..., description="End date for the KPI calculation"),
-    account_id: Optional[str] = Query(None, description="Optional account ID to filter results"),
+    account_id: Optional[UUID] = Query(None, description="Optional account ID to filter results"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    daily_costs = kpi_service.get_daily_costs(db, realm.id, start_date, end_date, account_id)
-    total_cost = kpi_service.get_total_cost(db, realm.id, start_date, end_date, account_id)
-    total_usage_fees = kpi_service.get_total_usage_fees(db, realm.id, start_date, end_date, account_id)
-    most_used_models = kpi_service.get_most_used_models(db, realm.id, start_date, end_date, account_id)
-    model_costs = kpi_service.get_model_costs(db, realm.id, start_date, end_date, account_id)
-    llms = kpi_service.get_used_llms(db, realm.id, start_date, end_date, account_id)
-
-    return {
-        "daily_costs": daily_costs,
-        "total_cost": total_cost,
-        "total_usage_fees": total_usage_fees,
-        "most_used_models": most_used_models,
-        "model_costs": model_costs,
-        "llms": llms
-    }
+    """
+    Get cost KPIs including:
+    - Daily costs
+    - Total cost
+    - Usage fees
+    - Most used models
+    - Model costs
+    - Current budget and usage percentage
+    """
+    return kpi_service.get_kpi_cost(db, realm.id, start_date, end_date, account_id)
 
 @router.get("/activity")
 def get_kpi_activity(

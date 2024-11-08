@@ -1,11 +1,12 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import date
+from datetime import date, datetime, timezone
 from app.models.usage import Usage
 from app.models.llm_cost import LLMCost
 from app.models.api_key import APIKey
 from app.models.account import Account
 from app.models.large_language_model import LargeLanguageModel
+from app.models.bill_limit import BillLimit
 from typing import Optional, List, Dict
 from uuid import UUID
 
@@ -309,3 +310,51 @@ def get_used_llms(db: Session, realm_id: str, start_date: date, end_date: date, 
         }
         for result in results
     ]
+
+def get_current_bill_limit(db: Session, realm_id: str, current_time: datetime) -> Optional[float]:
+    """Get the current bill limit amount for a realm"""
+    current_limit = (
+        db.query(BillLimit)
+        .filter(
+            BillLimit.realm_id == realm_id,
+            BillLimit.valid_from <= current_time,
+            (BillLimit.valid_to.is_(None) | (BillLimit.valid_to > current_time))
+        )
+        .order_by(BillLimit.valid_from.desc())
+        .first()
+    )
+    
+    return current_limit.amount if current_limit else None
+
+def get_kpi_cost(db: Session, realm_id: str, start_date: date, end_date: date, account_id: Optional[UUID] = None) -> dict:
+    """Get cost KPIs including budget information"""
+    daily_costs = get_daily_costs(db, realm_id, start_date, end_date, account_id)
+    total_cost = get_total_cost(db, realm_id, start_date, end_date, account_id)
+    total_usage_fees = get_total_usage_fees(db, realm_id, start_date, end_date, account_id)
+    most_used_models = get_most_used_models(db, realm_id, start_date, end_date, account_id)
+    model_costs = get_model_costs(db, realm_id, start_date, end_date, account_id)
+    llms = get_used_llms(db, realm_id, start_date, end_date, account_id)
+    
+    # Get current bill limit
+    current_time = datetime.now(timezone.utc)
+    current_budget = get_current_bill_limit(db, realm_id, current_time)
+    
+    # Calculate budget usage percentage
+    budget_usage_percentage = (
+        (total_cost / current_budget) * 100 
+        if current_budget and total_cost > 0 
+        else 0
+    )
+
+    return {
+        "daily_costs": daily_costs,
+        "total_cost": total_cost,
+        "total_usage_fees": total_usage_fees,
+        "most_used_models": most_used_models,
+        "model_costs": model_costs,
+        "llms": llms,
+        "budget": {
+            "current_budget": current_budget,
+            "budget_usage_percentage": round(budget_usage_percentage, 2)
+        }
+    }

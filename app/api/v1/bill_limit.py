@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.schemas.bill_limit import (
@@ -49,14 +49,29 @@ def update_bill_limit(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    return bill_limit_service.update_bill_limit(db, bill_limit_id, bill_limit, realm.id)
+    """Update a bill limit"""
+    result = bill_limit_service.update_bill_limit(db, bill_limit_id, bill_limit, realm.id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Bill limit not found")
+    return result
 
 @router.delete("/{bill_limit_id}")
 def delete_bill_limit(
     bill_limit_id: uuid.UUID,
+    reopen_previous_price: bool = Query(
+        False,
+        description="When true, reopens the previous price for this bill limit"
+    ),
     realm: dict = Depends(check_realm_access),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    bill_limit_service.delete_bill_limit(db, bill_limit_id, realm.id)
-    return {"message": "Bill limit deleted successfully"}
+    success = bill_limit_service.delete_bill_limit(db, bill_limit_id, realm.id, reopen_previous_price)
+    if not success:
+        raise HTTPException(status_code=404, detail="Bill limit not found")
+    
+    message = "Bill limit deleted successfully"
+    if reopen_previous_price:
+        message += " and previous price reopened"
+    
+    return {"message": message}

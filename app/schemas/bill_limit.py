@@ -24,8 +24,11 @@ class BillLimitHistoryEntry(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class BillLimitResponse(BillLimitBase):
+class BillLimitResponse(BaseModel):
     id: UUID
+    amount: float
+    valid_from: datetime
+    valid_to: Optional[datetime] = None
     realm_id: str
 
     model_config = ConfigDict(from_attributes=True)

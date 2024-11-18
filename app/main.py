@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from app.core.config import settings
 from app.api.routes import main_router
 from fastapi.middleware.cors import CORSMiddleware
-from app.static.platform import mount_platform
+from app.static import admin
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION, debug=settings.DEBUG)
 
@@ -19,4 +19,4 @@ app.add_middleware(
 app.include_router(main_router, prefix="/api")
 
 # Mount platform static files
-mount_platform(app)
+admin.mount(app)

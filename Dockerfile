@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Install system dependencies
 RUN apt-get update && \
-    apt-get install -y git && \
+    apt-get install -y git curl unzip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -16,12 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create directory for frontend
-RUN mkdir -p /app/platform
-
 # Create platform directory and download frontend
-RUN mkdir -p /app/app/platform && \
-    cd /app/app/platform && \
+RUN mkdir -p /platform
+RUN cd /platform && \
     curl -L https://github.com/fiorino-ai/fiorino-webapp/releases/download/fiorino-webapp-stable/release.zip -o release.zip && \
     unzip release.zip && \
     rm release.zip

@@ -19,4 +19,4 @@ app.add_middleware(
 app.include_router(main_router, prefix="/api")
 
 # Mount platform static files
-admin.mount(app)
+#admin.mount(app)

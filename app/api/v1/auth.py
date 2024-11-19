@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.schemas.user import UserCreate, UserLogin, UserResponse, PasswordResetRequest, PasswordReset
 from app.services import user_service
+from app.core.config import settings
 from datetime import timedelta
 from app.api.deps import get_current_user
 
@@ -16,7 +17,7 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
 @router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
     user_data = user_service.authenticate_user(db, user)
-    access_token_expires = timedelta(minutes=user_service.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = user_service.create_access_token(
         data={"sub": user_data["id"]}, expires_delta=access_token_expires
     )

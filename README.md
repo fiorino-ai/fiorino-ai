@@ -124,3 +124,36 @@ We welcome contributions! Feel free to submit a Pull Request or open an Issue to
 ## License
 
 This project is released under the MIT License.
+
+## User Management
+
+### Creating a New User
+
+#### Local Environment
+
+To create a new user in the local environment:
+
+```
+# Run the create user script from the project root
+DATABASE_URL="..." python -m app.scripts.create_user
+```
+
+#### Docker Environment
+
+To create a new user in the Docker environment:
+
+```
+# If the container is running
+docker exec -it <container_name> python -m app.scripts.create_user
+# Or using docker-compose
+docker-compose exec api python -m app.scripts.create_user
+```
+
+The script will:
+
+1. Prompt for an email address
+2. Generate a secure random password
+3. Create the user in the database
+4. Display the generated password (save it securely!)
+
+> **Note**: The generated password will only be shown once during creation. Make sure to save it in a secure location.

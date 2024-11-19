@@ -55,6 +55,36 @@ Fiorino.AI is an open-source solution that enables SaaS services using Large Lan
    ```
    This will apply all pending migrations before starting the server.
 
+## Docker Installation
+
+1. Pull the image from Docker Hub:
+
+   ```bash
+   docker pull fiorino/fiorino-ai:latest
+   ```
+
+2. Run the container:
+   ```bash
+   docker run -d \
+     -p 8000:8000 \
+     -e DATABASE_URL="postgresql://user:password@host:5432/db" \
+     fiorino/fiorino-ai:latest
+   ```
+
+### Build from source
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/fiorino-ai/fiorino-ai.git
+   cd fiorino-ai
+   ```
+
+2. Build the Docker image:
+   ```bash
+   docker build -t fiorino/fiorino-ai:latest .
+   ```
+
 ## Usage
 
 Start the server with:
@@ -94,3 +124,36 @@ We welcome contributions! Feel free to submit a Pull Request or open an Issue to
 ## License
 
 This project is released under the MIT License.
+
+## User Management
+
+### Creating a New User
+
+#### Local Environment
+
+To create a new user in the local environment:
+
+```
+# Run the create user script from the project root
+DATABASE_URL="..." python -m app.scripts.create_user
+```
+
+#### Docker Environment
+
+To create a new user in the Docker environment:
+
+```
+# If the container is running
+docker exec -it <container_name> python -m app.scripts.create_user
+# Or using docker-compose
+docker-compose exec api python -m app.scripts.create_user
+```
+
+The script will:
+
+1. Prompt for an email address
+2. Generate a secure random password
+3. Create the user in the database
+4. Display the generated password (save it securely!)
+
+> **Note**: The generated password will only be shown once during creation. Make sure to save it in a secure location.

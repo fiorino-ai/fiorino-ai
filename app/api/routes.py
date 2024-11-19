@@ -1,7 +1,5 @@
 from fastapi import APIRouter
+from .v1 import v1_router
 
-router = APIRouter()
-
-@router.get("/hello")
-async def hello():
-    return {"message": "Hello from Fiorino.AI"}
+main_router = APIRouter()
+main_router.include_router(v1_router, prefix="/v1")

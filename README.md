@@ -55,6 +55,36 @@ Fiorino.AI is an open-source solution that enables SaaS services using Large Lan
    ```
    This will apply all pending migrations before starting the server.
 
+## Docker Installation
+
+1. Pull the image from Docker Hub:
+
+   ```bash
+   docker pull fiorino/fiorino-ai:latest
+   ```
+
+2. Run the container:
+   ```bash
+   docker run -d \
+     -p 8000:8000 \
+     -e DATABASE_URL="postgresql://user:password@host:5432/db" \
+     fiorino/fiorino-ai:latest
+   ```
+
+### Build from source
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/fiorino-ai/fiorino-ai.git
+   cd fiorino-ai
+   ```
+
+2. Build the Docker image:
+   ```bash
+   docker build -t fiorino/fiorino-ai:latest .
+   ```
+
 ## Usage
 
 Start the server with:

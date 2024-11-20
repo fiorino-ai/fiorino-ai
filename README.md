@@ -1,18 +1,25 @@
 # Fiorino.AI
 
-Fiorino.AI is an open-source solution that enables SaaS services using Large Language Models (LLMs) to track costs, usage, and bill customers efficiently.
+## Know your AI costs, maximize profits
+
+[Fiorino.AI](https://fiorinoai.tech) is an open-source solution that helps SaaS owners track and optimize their AI costs. Monitor per-user LLM usage, set spending limits, and automate usage-based billing.
+
+## Overview
+
+Fiorino.AI empowers SaaS businesses using Large Language Models (LLMs) by providing comprehensive cost tracking, usage monitoring, and automated billing solutions. Whether you're using OpenAI, Anthropic, or any other LLM provider, Fiorino.AI helps you understand and optimize your AI spending while ensuring profitability.
 
 ## Key Features
 
-- **Open Source**: Encourages community adoption and collaboration.
-- **Flexible Integration**: Supports various LLM services and models.
-- **Detailed Tracking**: Anonymous user-specific metrics and cost tracking.
-- **Modular Billing**: Integration with billing systems (e.g., Stripe) for direct user billing.
-- **Privacy-First**: Uses anonymous IDs to protect user privacy.
-- **Scalable Architecture**: Designed to handle multiple realms without performance degradation.
-- **Customization**: Advanced options for realm-specific themes and dashboards.
-- **Interoperability**: Optional data sharing between authorized realms.
-- **Audit and Compliance**: Comprehensive audit trails for each realm.
+- [x] **Open Source**: Encourages community adoption and collaboration.
+- [x] **Flexible Integration**: Supports various LLM services and models.
+- [x] **Detailed Tracking**: Anonymous user-specific metrics and cost tracking.
+- [ ] **Modular Billing**: Integration with billing systems (e.g., Stripe) for direct user billing.
+- [x] **Privacy-First**: Uses anonymous IDs to protect user privacy.
+- [x] **Scalable Architecture**: Designed to handle multiple realms without performance degradation.
+- [ ] **Audit and Compliance**: Comprehensive audit trails for each realm.
+- [ ] **Usage Limits**: Set and monitor usage limits per user or subscription tier. Get alerts when users approach their quota.
+- [ ] **Custom Insights**: Tag LLM interactions with your business metrics. Track costs by feature, action, or any custom dimension. Transform raw usage data into meaningful business intelligence.
+- [ ] **AI Cost Analyst**: Chat with your usage data through our AI assistant. Get instant insights, cost optimization suggestions, and usage patterns in natural language. Your personal AI consultant for LLM economics.
 
 ## Core Functionality
 

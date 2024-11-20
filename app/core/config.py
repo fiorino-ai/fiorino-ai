@@ -1,9 +1,10 @@
 from pydantic.v1 import BaseSettings
 from typing import List
+from app.core.version import __version__
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Fiorino.AI"
-    PROJECT_VERSION: str = "0.1.0"
+    PROJECT_VERSION: str = __version__
     DEBUG: bool = False
     DATABASE_URL: str = "postgresql://user:password@localhost/fiorino"
 

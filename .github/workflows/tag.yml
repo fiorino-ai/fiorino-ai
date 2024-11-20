@@ -52,6 +52,11 @@ jobs:
             # Tag with semver version (e.g., v1.2.3)
             type=semver,pattern={{version}}
 
+      - name: Create VERSION file
+        run: |
+          echo "${GITHUB_REF#refs/tags/}" > VERSION
+        if: startsWith(github.ref, 'refs/tags/')
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:

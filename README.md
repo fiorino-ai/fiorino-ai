@@ -21,6 +21,8 @@ Fiorino.AI empowers SaaS businesses using Large Language Models (LLMs) by provid
 - [ ] **Custom Insights**: Tag LLM interactions with your business metrics. Track costs by feature, action, or any custom dimension. Transform raw usage data into meaningful business intelligence.
 - [ ] **AI Cost Analyst**: Chat with your usage data through our AI assistant. Get instant insights, cost optimization suggestions, and usage patterns in natural language. Your personal AI consultant for LLM economics.
 
+![FiorinoAI Cost Usage Dashboard ](https://raw.githubusercontent.com/fiorino-ai/.github/refs/heads/main/images/fiorinoai-screenshoot.png)
+
 ## Core Functionality
 
 1. **Message Processing**: Receive and analyze user messages and LLM responses.

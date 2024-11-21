@@ -47,21 +47,21 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 
 1. Clone the repository:
 
-   ```bash
+   ```
    git clone https://github.com/fiorino-ai/fiorino-ai.git
-   cd Fiorino.AI
+   cd fiorino-ai
    ```
 
 2. Create and activate a virtual environment:
 
-   ```bash
+   ```
    python -m venv venv
    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
    ```
 
 3. Install dependencies:
 
-   ```bash
+   ```
    pip install -r requirements.txt
    ```
 
@@ -71,10 +71,23 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
    - Create a new database for Fiorino.AI
    - Update the `DATABASE_URL` in `.env`
 
-5. Run migrations:
+5. Initialize the database (this will apply all pending migrations before starting the server):
    ```bash
-   python run.py
+   DEBUG=True python run.py
    ```
+
+## User Management
+
+### Creating a New User
+
+#### Local Environment
+
+To create a new user in the local environment:
+
+```
+# Run the create user script from the project root
+DATABASE_URL="..." python -m app.scripts.create_user
+```
 
 ## Testing
 

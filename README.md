@@ -30,139 +30,22 @@ Fiorino.AI empowers SaaS businesses using Large Language Models (LLMs) by provid
 3. **Cost Management**: Maintain a database of LLM model costs with customizable overhead.
 4. **Billing Integration**: Seamless integration with Stripe for usage-based billing.
 
-## Installation
+## Quickstart
 
-1. Clone the repository:
+To make Fiorino.AI run on your machine, you just need [`docker`](https://docs.docker.com/get-docker/) installed:
 
-   ```
-   git clone https://github.com/yourusername/Fiorino.AI.git
-   cd Fiorino.AI
-   ```
-
-2. Create and activate a virtual environment:
-
-   ```
-   python -m venv venv
-   source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
-   ```
-
-3. Install dependencies:
-
-   ```
-   pip install -r requirements.txt
-   ```
-
-4. Set up PostgreSQL:
-
-   - Install PostgreSQL if you haven't already
-   - Create a new database for Fiorino.AI
-   - Update the `DATABASE_URL` in `app/core/config.py` with your PostgreSQL credentials
-
-5. Initialize the database:
-   ```
-   python run.py
-   ```
-   This will apply all pending migrations before starting the server.
-
-## Docker Installation
-
-1. Pull the image from Docker Hub:
-
-   ```bash
-   docker pull fiorino/fiorino-ai:latest
-   ```
-
-2. Run the container:
-   ```bash
-   docker run -d \
+```bash
+   docker run --rm -it \
      -p 8000:8000 \
      -e DATABASE_URL="postgresql://user:password@host:5432/db" \
-     fiorino/fiorino-ai:latest
-   ```
-
-### Build from source
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/fiorino-ai/fiorino-ai.git
-   cd fiorino-ai
-   ```
-
-2. Build the Docker image:
-   ```bash
-   docker build -t fiorino/fiorino-ai:latest .
-   ```
-
-## Usage
-
-Start the server with:
-
-```
-python run.py
+      ghcr.io/fiorino-ai/fiorino-ai:latest
 ```
 
-The server will be available at `http://localhost:8000`. API documentation can be accessed at `http://localhost:8000/docs`.
+- Access to the dashboard on [localhost:8000/app](http://localhost:8000/app).
+- You can also interact via REST API and try out the endpoints on [localhost:8000/docs](http://localhost:8000/docs)
 
-## Development
-
-To run the server in debug mode:
-
-```
-DEBUG=True python run.py
-```
-
-### Seed Usage Data
-
-```
-DATABASE_URL="..." python -m app.scripts.seed_usage
-```
-
-## Testing
-
-Run tests with:
-
-```
-pytest
-```
+Follow instructions on how to setup Fiorino.AI on [Quickstart Guide](https://github.com/fiorino-ai/fiorino-ai/wiki/Quickstart-Guide).
 
 ## Contributing
 
 We welcome contributions! Feel free to submit a Pull Request or open an Issue to discuss new features or improvements.
-
-## License
-
-This project is released under the MIT License.
-
-## User Management
-
-### Creating a New User
-
-#### Local Environment
-
-To create a new user in the local environment:
-
-```
-# Run the create user script from the project root
-DATABASE_URL="..." python -m app.scripts.create_user
-```
-
-#### Docker Environment
-
-To create a new user in the Docker environment:
-
-```
-# If the container is running
-docker exec -it <container_name> python -m app.scripts.create_user
-# Or using docker-compose
-docker-compose exec api python -m app.scripts.create_user
-```
-
-The script will:
-
-1. Prompt for an email address
-2. Generate a secure random password
-3. Create the user in the database
-4. Display the generated password (save it securely!)
-
-> **Note**: The generated password will only be shown once during creation. Make sure to save it in a secure location.

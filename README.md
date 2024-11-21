@@ -1,3 +1,8 @@
+<p align="center">
+<img src="https://raw.githubusercontent.com/fiorino-ai/.github/refs/heads/main/images/fiorinoai-banner-light.png#gh-light-mode-only">
+<img src="https://raw.githubusercontent.com/fiorino-ai/.github/refs/heads/main/images/fiorinoai-banner-dark.png#gh-dark-mode-only">
+</p>
+
 # Fiorino.AI
 
 ## Know your AI costs, maximize profits

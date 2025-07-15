@@ -19,7 +19,7 @@ COPY . .
 # Create platform directory and download frontend
 RUN mkdir -p /platform
 RUN cd /platform && \
-    curl -L https://github.com/fiorino-ai/fiorino-webapp/releases/download/fiorino-webapp-stable/release.zip -o release.zip && \
+    curl -L "https://github.com/fiorino-ai/fiorino-webapp/releases/download/fiorino-webapp-stable/release.zip?$(date +%s)" -o release.zip && \
     unzip release.zip && \
     rm release.zip
 
